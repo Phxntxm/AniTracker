@@ -1,0 +1,6 @@
+{
+  Viewer {
+    id
+    name
+  }
+}

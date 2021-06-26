@@ -1,0 +1,6 @@
+ffmpeg-python
+anitopy
+fuzzywuzzy[speedup]
+toml
+PySide6
+requests
