@@ -17,99 +17,98 @@ class Ui_Settings(object):
     def setupUi(self, Settings):
         if not Settings.objectName():
             Settings.setObjectName(u"Settings")
-        Settings.resize(733, 522)
-        Settings.setStyleSheet(u"background-color: rgb(68, 68, 68);")
+        Settings.resize(694, 276)
+        Settings.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
+"color: rgb(212, 212, 212);")
         self.horizontalLayout = QHBoxLayout(Settings)
         self.horizontalLayout.setObjectName(u"horizontalLayout")
         self.SettingsTabWidget = QTabWidget(Settings)
         self.SettingsTabWidget.setObjectName(u"SettingsTabWidget")
-        self.SettingsTabWidget.setStyleSheet(u"background-color: rgb(55, 55, 61);\n"
-"color: rgb(212, 212, 212);")
+        self.SettingsTabWidget.setStyleSheet(u"QTabWidget::pane {\n"
+"	border: 2px solid #C2C7CB;\n"
+"}\n"
+"QTabWidget::tab-bar {\n"
+"	left: 5px;\n"
+"}\n"
+"QTabBar::tab {\n"
+"	background: rgb(68, 68, 68);\n"
+"    border: 2px solid #C4C4C3;\n"
+"    border-bottom-color: #C2C7CB;\n"
+"    border-top-left-radius: 4px;\n"
+"    border-top-right-radius: 4px;\n"
+"    min-width: 8ex;\n"
+"    padding: 2px;\n"
+"}\n"
+"QTabBar::tab:selected, QTabBar::tab:hover {\n"
+"	background: rgb(95, 95, 95);\n"
+"}\n"
+"QTabBar::tab:selected {\n"
+"	border-color: #9B9B9B;\n"
+"	border-bottom-color: #C2C7CB;\n"
+"}\n"
+"QTabBar::tab:!selected {\n"
+"	margin-top: 2px;\n"
+"}")
         self.GeneralSettingsTab = QWidget()
         self.GeneralSettingsTab.setObjectName(u"GeneralSettingsTab")
-        self.gridLayout_2 = QGridLayout(self.GeneralSettingsTab)
-        self.gridLayout_2.setObjectName(u"gridLayout_2")
+        self.GeneralSettingsTab.setStyleSheet(u"")
         self.AnimeFolderLineEdit = QLineEdit(self.GeneralSettingsTab)
         self.AnimeFolderLineEdit.setObjectName(u"AnimeFolderLineEdit")
+        self.AnimeFolderLineEdit.setGeometry(QRect(140, 10, 125, 23))
         sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.AnimeFolderLineEdit.sizePolicy().hasHeightForWidth())
         self.AnimeFolderLineEdit.setSizePolicy(sizePolicy)
         self.AnimeFolderLineEdit.setReadOnly(True)
-
-        self.gridLayout_2.addWidget(self.AnimeFolderLineEdit, 0, 0, 1, 1)
-
         self.AnimeFolderBrowse = QPushButton(self.GeneralSettingsTab)
         self.AnimeFolderBrowse.setObjectName(u"AnimeFolderBrowse")
+        self.AnimeFolderBrowse.setGeometry(QRect(280, 10, 80, 23))
         sizePolicy.setHeightForWidth(self.AnimeFolderBrowse.sizePolicy().hasHeightForWidth())
         self.AnimeFolderBrowse.setSizePolicy(sizePolicy)
-
-        self.gridLayout_2.addWidget(self.AnimeFolderBrowse, 0, 1, 1, 1)
-
         self.AnimeFolderSettingsLabel = QLabel(self.GeneralSettingsTab)
         self.AnimeFolderSettingsLabel.setObjectName(u"AnimeFolderSettingsLabel")
+        self.AnimeFolderSettingsLabel.setGeometry(QRect(10, 10, 91, 16))
         sizePolicy.setHeightForWidth(self.AnimeFolderSettingsLabel.sizePolicy().hasHeightForWidth())
         self.AnimeFolderSettingsLabel.setSizePolicy(sizePolicy)
-
-        self.gridLayout_2.addWidget(self.AnimeFolderSettingsLabel, 0, 2, 1, 1)
-
         self.SubtitleLanguageLineEdit = QLineEdit(self.GeneralSettingsTab)
         self.SubtitleLanguageLineEdit.setObjectName(u"SubtitleLanguageLineEdit")
+        self.SubtitleLanguageLineEdit.setGeometry(QRect(140, 40, 125, 23))
         sizePolicy.setHeightForWidth(self.SubtitleLanguageLineEdit.sizePolicy().hasHeightForWidth())
         self.SubtitleLanguageLineEdit.setSizePolicy(sizePolicy)
-
-        self.gridLayout_2.addWidget(self.SubtitleLanguageLineEdit, 1, 0, 1, 2)
-
         self.SubtitleLanguageSettingsLabel = QLabel(self.GeneralSettingsTab)
         self.SubtitleLanguageSettingsLabel.setObjectName(u"SubtitleLanguageSettingsLabel")
+        self.SubtitleLanguageSettingsLabel.setGeometry(QRect(10, 40, 121, 16))
         sizePolicy.setHeightForWidth(self.SubtitleLanguageSettingsLabel.sizePolicy().hasHeightForWidth())
         self.SubtitleLanguageSettingsLabel.setSizePolicy(sizePolicy)
-
-        self.gridLayout_2.addWidget(self.SubtitleLanguageSettingsLabel, 1, 2, 1, 1)
-
         self.IgnoreSongsSignsCheckbox = QCheckBox(self.GeneralSettingsTab)
         self.IgnoreSongsSignsCheckbox.setObjectName(u"IgnoreSongsSignsCheckbox")
-
-        self.gridLayout_2.addWidget(self.IgnoreSongsSignsCheckbox, 2, 0, 1, 3)
-
+        self.IgnoreSongsSignsCheckbox.setGeometry(QRect(10, 70, 223, 21))
         self.SettingsTabWidget.addTab(self.GeneralSettingsTab, "")
         self.AnilistSettingsTab = QWidget()
         self.AnilistSettingsTab.setObjectName(u"AnilistSettingsTab")
-        self.gridLayout_3 = QGridLayout(self.AnilistSettingsTab)
-        self.gridLayout_3.setObjectName(u"gridLayout_3")
         self.AnilistInstructionsLabel = QLabel(self.AnilistSettingsTab)
         self.AnilistInstructionsLabel.setObjectName(u"AnilistInstructionsLabel")
+        self.AnilistInstructionsLabel.setGeometry(QRect(130, 0, 395, 69))
         self.AnilistInstructionsLabel.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout_3.addWidget(self.AnilistInstructionsLabel, 0, 0, 1, 2)
-
         self.AnilistConnectedAccountLabel = QLabel(self.AnilistSettingsTab)
         self.AnilistConnectedAccountLabel.setObjectName(u"AnilistConnectedAccountLabel")
+        self.AnilistConnectedAccountLabel.setGeometry(QRect(10, 80, 147, 16))
         self.AnilistConnectedAccountLabel.setAlignment(Qt.AlignCenter)
-
-        self.gridLayout_3.addWidget(self.AnilistConnectedAccountLabel, 1, 0, 1, 2)
-
         self.AnilistConnect = QPushButton(self.AnilistSettingsTab)
         self.AnilistConnect.setObjectName(u"AnilistConnect")
-
-        self.gridLayout_3.addWidget(self.AnilistConnect, 2, 0, 1, 1)
-
+        self.AnilistConnect.setGeometry(QRect(0, 30, 114, 23))
         self.AnilistCodeConfirm = QPushButton(self.AnilistSettingsTab)
         self.AnilistCodeConfirm.setObjectName(u"AnilistCodeConfirm")
-
-        self.gridLayout_3.addWidget(self.AnilistCodeConfirm, 2, 1, 1, 1)
-
+        self.AnilistCodeConfirm.setGeometry(QRect(540, 30, 131, 23))
         self.AnilistCodeBox = QTextEdit(self.AnilistSettingsTab)
         self.AnilistCodeBox.setObjectName(u"AnilistCodeBox")
+        self.AnilistCodeBox.setGeometry(QRect(250, 80, 411, 130))
         sizePolicy1 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
         sizePolicy1.setHeightForWidth(self.AnilistCodeBox.sizePolicy().hasHeightForWidth())
         self.AnilistCodeBox.setSizePolicy(sizePolicy1)
-
-        self.gridLayout_3.addWidget(self.AnilistCodeBox, 3, 0, 1, 2)
-
         self.SettingsTabWidget.addTab(self.AnilistSettingsTab, "")
 
         self.horizontalLayout.addWidget(self.SettingsTabWidget)
@@ -124,13 +123,13 @@ class Ui_Settings(object):
     # setupUi
 
     def retranslateUi(self, Settings):
-        Settings.setWindowTitle(QCoreApplication.translate("Settings", u"Form", None))
+        Settings.setWindowTitle(QCoreApplication.translate("Settings", u"Settings", None))
         self.AnimeFolderBrowse.setText(QCoreApplication.translate("Settings", u"Browse", None))
-        self.AnimeFolderSettingsLabel.setText(QCoreApplication.translate("Settings", u"Anime Folder", None))
-        self.SubtitleLanguageSettingsLabel.setText(QCoreApplication.translate("Settings", u"Subtitle Language", None))
+        self.AnimeFolderSettingsLabel.setText(QCoreApplication.translate("Settings", u"Anime Folder:", None))
+        self.SubtitleLanguageSettingsLabel.setText(QCoreApplication.translate("Settings", u"Subtitle Language:", None))
         self.IgnoreSongsSignsCheckbox.setText(QCoreApplication.translate("Settings", u"Ignore Songs and Signs Subtitles", None))
         self.SettingsTabWidget.setTabText(self.SettingsTabWidget.indexOf(self.GeneralSettingsTab), QCoreApplication.translate("Settings", u"General", None))
-        self.AnilistInstructionsLabel.setText(QCoreApplication.translate("Settings", u"<html><head/><body><p>To connect a new account, click Connect to anilist below</p><p>Login, then copy the code provided, enter it in the text box below</p><p>Then hit Confirm Code</p></body></html>", None))
+        self.AnilistInstructionsLabel.setText(QCoreApplication.translate("Settings", u"<html><head/><body><p>To connect a new account, click Connect to anilist to the left</p><p>Login, then copy the code provided, enter it in the text box below</p><p>Then hit Confirm Code to the right</p></body></html>", None))
         self.AnilistConnectedAccountLabel.setText(QCoreApplication.translate("Settings", u"Connected account: N/A", None))
         self.AnilistConnect.setText(QCoreApplication.translate("Settings", u"Connect to anilist", None))
         self.AnilistCodeConfirm.setText(QCoreApplication.translate("Settings", u"Confirm Code", None))

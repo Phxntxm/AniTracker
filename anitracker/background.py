@@ -1,14 +1,14 @@
 from __future__ import annotations
 
+import traceback
 from time import sleep
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 
 from anitracker.media import AnimeCollection
-
 
 if TYPE_CHECKING:
     from anitracker import AniTracker
@@ -36,9 +36,8 @@ class PlayEpisode(QThread):
         try:
             if self._window.app.play_episode(self._episode):
                 self._window.anime_updater.start()
-        except Exception as e:
-            print("Exception in thread PlayEpisode")
-            print(e)
+        except:
+            traceback.print_exc()
 
 
 class UpdateAnimeEpisodes(QThread):
@@ -54,9 +53,8 @@ class UpdateAnimeEpisodes(QThread):
         try:
             self._app._refresh_anime_folder()
             self.reload_anime_eps.emit()
-        except Exception as e:
-            print("Exception in thread UpdateAnimeEpisodes")
-            print(e)
+        except:
+            traceback.print_exc()
 
 
 class UpdateAnimeEpisodesLoop(QThread):
@@ -74,9 +72,8 @@ class UpdateAnimeEpisodesLoop(QThread):
                 self._app._refresh_anime_folder()
                 self.reload_anime_eps.emit()
                 sleep(120)
-        except Exception as e:
-            print("Exception in thread UpdateAnimeEpisodes")
-            print(e)
+        except:
+            traceback.print_exc()
 
 
 class ConnectToAnilist(QThread):
@@ -102,9 +99,8 @@ class ConnectToAnilist(QThread):
                 if self.first_run:
                     self.first_run = False
                     self._window.anime_updater.start()
-        except Exception as e:
-            print("Exception in thread ConnectToAnilist")
-            print(e)
+        except:
+            traceback.print_exc()
 
 
 class UpdateAnimeLists(QThread):
@@ -130,9 +126,8 @@ class UpdateAnimeLists(QThread):
                 if self.first_run:
                     self.first_run = False
                     self._window.update_worker.start()
-        except Exception as e:
-            print("Exception in thread UpdateAnimeLists")
-            print(e)
+        except:
+            traceback.print_exc()
 
 
 class AnimeUpdateSuccess(QThread):
@@ -148,6 +143,5 @@ class AnimeUpdateSuccess(QThread):
             self.toggle.emit()
             sleep(2)
             self.toggle.emit()
-        except Exception as e:
-            print("Exception in thread AnimeUpdateSuccess")
-            print(e)
+        except:
+            traceback.print_exc()

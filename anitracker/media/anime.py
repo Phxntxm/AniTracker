@@ -266,6 +266,34 @@ class AnimeCollection:
             }
 
         ret = sync.gql("update_entry", payload)
+        self.update_user_data(ret["data"]["SaveMediaListEntry"])
+
+    def update_user_data(self, data: Dict):
+        self.user_status = UserStatus[data["status"]]
+        self.score = data["score"]
+        self.notes = data["notes"]
+        self.progress = data["progress"]
+        self.repeat = data["repeat"]
+        self.updated_at = (
+            date.fromtimestamp(data["updatedAt"]) if data["updatedAt"] else None
+        )
+
+        user_start = (
+            date(**data["startedAt"])
+            if all(value for value in data["startedAt"].values())
+            else None
+        )
+        user_end = (
+            date(**data["completedAt"])
+            if all(value for value in data["completedAt"].values())
+            else None
+        )
+
+        self.user_start_date = user_start
+        self.user_end_date = user_end
+
+    def delete(self, sync: AniList):
+        sync.gql("delete_entry", {"id": self._list_id})
 
     def update_episode(self, file: AnimeFile):
         self.episodes[file.episode_number] = file

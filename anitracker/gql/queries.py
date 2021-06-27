@@ -53,25 +53,46 @@ query ($userName: String) {
 
 update_entry = """
 mutation (
-    $id: Int,
-    $status: MediaListStatus,
-    $score: Float,
-    $progress: Int,
-    $repeat: Int,
-    $notes: String,
-    $startedAt: FuzzyDateInput,
-    $completedAt: FuzzyDateInput
+  $id: Int,
+  $status: MediaListStatus,
+  $score: Float,
+  $progress: Int,
+  $repeat: Int,
+  $notes: String,
+  $startedAt: FuzzyDateInput,
+  $completedAt: FuzzyDateInput
 )
 {
-    SaveMediaListEntry (
-        id: $id,
-        status: $status,
-        score: $score,
-        progress: $progress,
-        repeat: $repeat,
-        notes: $notes,
-        startedAt: $startedAt,
-        completedAt: $completedAt
+  SaveMediaListEntry (
+      id: $id,
+      status: $status,
+      score: $score,
+      progress: $progress,
+      repeat: $repeat,
+      notes: $notes,
+      startedAt: $startedAt,
+      completedAt: $completedAt
+  )
+  {
+    id
+    status
+    score
+    notes
+    progress
+    repeat
+    updatedAt
+    startedAt {year month day}
+    completedAt {year month day}
+  }
+}
+"""
+delete_entry = """
+mutation (
+    $id: Int
+)
+{
+    DeleteMediaListEntry (
+        id: $id
     )
     {id}
 }

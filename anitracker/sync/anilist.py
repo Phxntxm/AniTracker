@@ -1,14 +1,11 @@
-from typing import Any, Dict, Union, TYPE_CHECKING
+from typing import Any, Dict, Union
 import urllib.parse
 import webbrowser
 
 import requests
-import os
+import json
 
 from anitracker.gql import queries
-
-if TYPE_CHECKING:
-    from anitracker.config import Config
 
 BASE_URL = "https://anilist.co/api/v2"
 GQL_URL = "https://graphql.anilist.co"
@@ -54,7 +51,12 @@ class AniList:
         with requests.post(
             GQL_URL, json={"query": query, "variables": variables}, headers=self.headers
         ) as r:
-            return r.json()
+            try:
+                return r.json()
+            except json.JSONDecodeError:
+                print(query)
+                print(variables)
+                raise
 
     def open_oauth(self):
         payload = {

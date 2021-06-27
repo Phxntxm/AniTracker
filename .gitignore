@@ -139,3 +139,7 @@ cython_debug/
 
 .vscode/
 run.env
+resources/
+build.sh
+build-linux.sh
+build-windows.sh

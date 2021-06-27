@@ -1,7 +1,9 @@
-from datetime import datetime
+import os
 import shlex
 import subprocess
+import sys
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import DefaultDict, Dict, Generator, List, Union
 
@@ -78,14 +80,31 @@ class AniTracker:
         return self._play_episode(episode)
 
     def _play_episode(self, episode: AnimeFile, *, subtitle_id: int = 1) -> bool:
+        if sys.platform.startswith("linux"):
+            # Has mpv
+            if subprocess.run(["which", "mpv"], capture_output=1).returncode == 0:
+                return self._play_episode_mpv(episode, subtitle_id=subtitle_id)
+            else:
+                self._play_episode_default_linux(episode)
+                return False
+        elif sys.platform.startswith("win32"):
+            self._play_episode_default_windows(episode)
+            return False
+
+    def _play_episode_default_linux(self, episode: AnimeFile):
+        fmt = f"xdg-open '{episode.file}'"
+        cmd = self._escape_linux_command(fmt)
+        subprocess.run(cmd, capture_output=True)
+
+    def _play_episode_default_windows(self, episode: AnimeFile):
+        os.startfile(episode.file)
+
+    def _play_episode_mpv(self, episode: AnimeFile, *, subtitle_id: int = 1) -> bool:
         filename = episode.file.replace("'", r"\'")
         fmt = r"mpv --fs --sid={} --term-status-msg=':${{percent-pos}}:' '{}'".format(
             subtitle_id, filename
         )
-        sh = shlex.shlex(fmt, posix=True)
-        sh.escapedquotes = "\"'"
-        sh.whitespace_split = True
-        cmd = list(sh)
+        cmd = self._escape_linux_command(fmt)
 
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
@@ -124,8 +143,18 @@ class AniTracker:
         else:
             return False
 
+    def _escape_linux_command(self, string: str) -> List[str]:
+        sh = shlex.shlex(string, posix=True)
+        sh.escapedquotes = "\"'"
+        sh.whitespace_split = True
+        return list(sh)
+
     def _increment_episode(self, episode: AnimeFile):
         coll = self.get_anime(episode.title)
+        # First skip this if it's not the next episode
+        if coll.progress != episode.episode_number - 1:
+            return
+
         # The update variables that will be sent
         vars = {"progress": coll.progress + 1}
 

@@ -18,13 +18,37 @@ class Ui_AnimeInfo(object):
         if not AnimeInfo.objectName():
             AnimeInfo.setObjectName(u"AnimeInfo")
         AnimeInfo.resize(751, 543)
-        AnimeInfo.setStyleSheet(u"background-color: rgb(68, 68, 68);")
+        AnimeInfo.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
+"color: rgb(212, 212, 212);")
         self.gridLayout = QGridLayout(AnimeInfo)
         self.gridLayout.setObjectName(u"gridLayout")
         self.tabWidget = QTabWidget(AnimeInfo)
         self.tabWidget.setObjectName(u"tabWidget")
-        self.tabWidget.setStyleSheet(u"background-color: rgb(55, 55, 61);\n"
-"color: rgb(212, 212, 212);")
+        self.tabWidget.setStyleSheet(u"QTabWidget::pane {\n"
+"	border: 2px solid #C2C7CB;\n"
+"}\n"
+"QTabWidget::tab-bar {\n"
+"	left: 5px;\n"
+"}\n"
+"QTabBar::tab {\n"
+"	background: rgb(68, 68, 68);\n"
+"    border: 2px solid #C4C4C3;\n"
+"    border-bottom-color: #C2C7CB;\n"
+"    border-top-left-radius: 4px;\n"
+"    border-top-right-radius: 4px;\n"
+"    min-width: 8ex;\n"
+"    padding: 2px;\n"
+"}\n"
+"QTabBar::tab:selected, QTabBar::tab:hover {\n"
+"	background: rgb(95, 95, 95);\n"
+"}\n"
+"QTabBar::tab:selected {\n"
+"	border-color: #9B9B9B;\n"
+"	border-bottom-color: #C2C7CB;\n"
+"}\n"
+"QTabBar::tab:!selected {\n"
+"	margin-top: 2px;\n"
+"}")
         self.tab = QWidget()
         self.tab.setObjectName(u"tab")
         sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
@@ -207,7 +231,7 @@ class Ui_AnimeInfo(object):
     # setupUi
 
     def retranslateUi(self, AnimeInfo):
-        AnimeInfo.setWindowTitle(QCoreApplication.translate("AnimeInfo", u"Form", None))
+        AnimeInfo.setWindowTitle(QCoreApplication.translate("AnimeInfo", u"Anime Settings", None))
         self.AnimeTitleLabelHeader.setText(QCoreApplication.translate("AnimeInfo", u"Titles:", None))
         self.AnimeDescriptionLabelHeader.setText(QCoreApplication.translate("AnimeInfo", u"Description:", None))
         self.AnimeDescriptionLabel.setText(QCoreApplication.translate("AnimeInfo", u"Description", None))
