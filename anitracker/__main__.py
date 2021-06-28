@@ -49,6 +49,16 @@ class MouseFilter(QObject):
         return super().eventFilter(watched, event)
 
 
+class HiddenProgressBarItem(QTableWidgetItem):
+    def __init__(self, anime: AnimeCollection) -> None:
+        super().__init__("")
+        self.amount = anime.progress / anime.episode_count if anime.episode_count else 0
+        self.anime = anime
+
+    def __lt__(self, other):
+        return self.amount < other.amount
+
+
 class MainWindow(QMainWindow):
     # Setup stuff
     def __init__(self, qapp: QApplication):
@@ -184,6 +194,7 @@ class MainWindow(QMainWindow):
             table.horizontalHeader().customContextMenuRequested.connect(
                 self.open_header_menu
             )
+            table.horizontalHeader().setMinimumSectionSize(50)
             # Now set the custom context menu on the table itself
             table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             table.customContextMenuRequested.connect(self.open_anime_context_menu)
@@ -191,6 +202,7 @@ class MainWindow(QMainWindow):
 
             # Insert the column for progress first
             table.insertColumn(0)
+            table.setColumnWidth(0, 200)
 
             for index, enabled in enumerate(self.get_headers(table).values(), start=1):
                 # Get the pretty title for the action menu
@@ -275,24 +287,48 @@ class MainWindow(QMainWindow):
         bar = QProgressBar()
         bar.setMinimum(0)
         bar.setMaximum(anime.episode_count)
+        bar.setMaximumHeight(15)
+        bar.setStyleSheet(
+            """
+            QProgressBar {
+                border: 2px solid grey;
+                border-radius: 5px;
+                background-color: rgb(68, 68, 68);
+                vertical-align: middle;
+            }
+            QProgressBar:horizontal {
+                text-align: right;
+                margin-right: 8ex;
+                padding: 1px;
+            }
+            QProgressBar::chunk {
+                background-color: #05B8CC;
+                width: 1px;
+            }
+            """
+        )
+        cell_widget = QWidget()
+        layout = QHBoxLayout()
+        layout.addWidget(bar)
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setContentsMargins(0, 0, 0, 0)
+        cell_widget.setLayout(layout)
+
         bar.setValue(anime.progress)
         bar.setFormat("%v/%m")
+        # Don't show progress bar if there are no episodes
+        if anime.episode_count == 0:
+            bar.setVisible(False)
+
         if anime.missing_eps:
             tt = f"Missing episodes: {anime.missing_eps}"
         else:
             tt = "Found all episodes"
 
         bar.setToolTip(tt)
-        table.setCellWidget(row_pos, 0, bar)
+        table.setCellWidget(row_pos, 0, cell_widget)
         # Add an item along with the progressbar to enable sorting
-        item = QTableWidgetItem()
-        if anime.episode_count:
-            item.setData(Qt.DisplayRole, anime.progress / anime.episode_count)
-        else:
-            item.setData(Qt.DisplayRole, 0)
-        item.anime = anime
-        # item.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        # item.customContextMenuRequested.connect(self.open_anime_context_menu)
+        item = HiddenProgressBarItem(anime)
         table.setItem(row_pos, 0, item)
 
         for index, attr in enumerate(self._header_labels, start=1):
@@ -320,12 +356,12 @@ class MainWindow(QMainWindow):
 
     def update_row(self, table: QTableWidget, row: int, anime: AnimeCollection):
         # Set the progress bar's data
-        bar = table.cellWidget(row, 0)
+        bar = table.cellWidget(row, 0).findChild(QProgressBar)
         bar.setMaximum(anime.episode_count)
         bar.setValue(anime.progress)
         if anime.episode_count:
             table.item(row, 0).setData(
-                Qt.DisplayRole, anime.progress / anime.episode_count
+                Qt.UserRole, anime.progress / anime.episode_count
             )
 
         if anime.missing_eps:

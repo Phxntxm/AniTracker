@@ -102,7 +102,7 @@ color: rgb(212, 212, 212);</string>
            <bool>false</bool>
           </property>
           <property name="rowCount">
-           <number>0</number>
+           <number>5</number>
           </property>
           <property name="columnCount">
            <number>0</number>
@@ -116,6 +116,11 @@ color: rgb(212, 212, 212);</string>
           <attribute name="verticalHeaderHighlightSections">
            <bool>false</bool>
           </attribute>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
+          <row/>
          </widget>
         </item>
        </layout>
