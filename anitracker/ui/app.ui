@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>596</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -57,7 +57,7 @@ QTabBar::tab:!selected {
 }</string>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>4</number>
       </property>
       <widget class="QWidget" name="WatchingTab">
        <attribute name="title">
@@ -102,7 +102,7 @@ color: rgb(212, 212, 212);</string>
            <bool>false</bool>
           </property>
           <property name="rowCount">
-           <number>5</number>
+           <number>0</number>
           </property>
           <property name="columnCount">
            <number>0</number>
@@ -116,11 +116,6 @@ color: rgb(212, 212, 212);</string>
           <attribute name="verticalHeaderHighlightSections">
            <bool>false</bool>
           </attribute>
-          <row/>
-          <row/>
-          <row/>
-          <row/>
-          <row/>
          </widget>
         </item>
        </layout>
