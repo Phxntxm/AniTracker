@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import DefaultDict, Dict, Generator, List, Union
 
 import ffmpeg
-from fuzzywuzzy import fuzz
+from rapidfuzz import fuzz
 
 from anitracker.config import Config
 from anitracker.media import AnimeCollection, AnimeFile, UserStatus
@@ -156,10 +156,10 @@ class AniTracker:
             return
 
         # The update variables that will be sent
-        vars = {"progress": coll.progress + 1}
+        vars = {"progress": episode.episode_number}
 
         # Include completion if this is the last episode
-        if coll.progress == coll.episode_count - 1:
+        if episode.episode_number == coll.episode_count:
             if coll.user_status == UserStatus.REPEATING:
                 vars["status"] = UserStatus.COMPLETED
                 vars["repeat"] = coll.repeat + 1
