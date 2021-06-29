@@ -106,6 +106,17 @@ class MainWindow(QMainWindow):
         # Setup our custom UI stuff
         self.custom_ui()
 
+        # Add the filter line edit to the right of the tool box
+        self.filter_anime = QLineEdit()
+        self.filter_anime.setPlaceholderText("Filter anime")
+        self.filter_anime.setStyleSheet(
+            """
+            margin-left: 500px;
+            """
+        )
+        self.filter_anime.textChanged.connect(self.filter_row)
+        self.ui.toolBar.addWidget(self.filter_anime)
+
         # Setup background stuff
         self.threadpool = QThreadPool()
         # Used for searching files in the background
@@ -635,6 +646,20 @@ class MainWindow(QMainWindow):
     # Source code was clicked
     def open_repo(self):
         webbrowser.open("https://github.com/Phxntxm/AniTracker")
+
+    # Filter anime was typed in
+    def filter_row(self, text: str):
+        for table in self.tables:
+            for row in range(table.rowCount()):
+                anime: AnimeCollection = table.item(row, 0).anime
+                if (
+                    text.lower() in anime.english_title.lower()
+                    or text.lower() in anime.romaji_title.lower()
+                    or text.lower() in anime.native_title.lower()
+                ):
+                    table.setRowHidden(row, False)
+                else:
+                    table.setRowHidden(row, True)
 
 
 def main():

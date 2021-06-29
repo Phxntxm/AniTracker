@@ -137,10 +137,10 @@ class AnimeCollection:
             data["progress"],
             data["repeat"],
             date.fromtimestamp(data["updatedAt"]) if data["updatedAt"] else None,
-            data["media"]["title"]["romaji"],
-            data["media"]["title"]["english"],
-            data["media"]["title"]["native"],
-            data["media"]["title"]["userPreferred"],
+            data["media"]["title"]["romaji"] or "",
+            data["media"]["title"]["english"] or "",
+            data["media"]["title"]["native"] or "",
+            data["media"]["title"]["userPreferred"] or "",
             AnimeStatus[data["media"]["status"]],
             data["media"]["description"],
             data["notes"],
@@ -206,10 +206,10 @@ class AnimeCollection:
         self.updated_at = (
             date.fromtimestamp(data["updatedAt"]) if data["updatedAt"] else None
         )
-        self.romaji_title = data["media"]["title"]["romaji"]
-        self.english_title = data["media"]["title"]["english"]
-        self.native_title = data["media"]["title"]["native"]
-        self.preferred_title = data["media"]["title"]["userPreferred"]
+        self.romaji_title = data["media"]["title"]["romaji"] or ""
+        self.english_title = data["media"]["title"]["english"] or ""
+        self.native_title = data["media"]["title"]["native"] or ""
+        self.preferred_title = data["media"]["title"]["userPreferred"] or ""
         self.anime_status = AnimeStatus[data["media"]["status"]]
         self.description = data["media"]["description"]
         self.notes = data["notes"]
