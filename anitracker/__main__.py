@@ -570,10 +570,13 @@ class MainWindow(QMainWindow):
             # Reverse through the range, so that removal of rows
             # doesn't mess up what we're looking at
             for row in range(table.rowCount() - 1, -1, -1):
-                anime = table.item(row, 0).anime
+                anime: AnimeCollection = table.item(row, 0).anime
 
                 # If the anime is not in the list, remove it from the table
                 if anime not in animes:
+                    table.removeRow(row)
+                # Otherwise if this table doesn't match the anime's status, remove it
+                elif self.get_table(anime.user_status) != table:
                     table.removeRow(row)
 
         # Now loop through the animes and handle all the updates
