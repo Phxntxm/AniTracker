@@ -18,7 +18,7 @@ class Ui_AnimeApp(object):
     def setupUi(self, AnimeApp):
         if not AnimeApp.objectName():
             AnimeApp.setObjectName(u"AnimeApp")
-        AnimeApp.resize(800, 600)
+        AnimeApp.resize(800, 596)
         AnimeApp.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
 "color: rgb(212, 212, 212);")
         self.actionSettings = QAction(AnimeApp)
@@ -205,6 +205,12 @@ class Ui_AnimeApp(object):
 
         self.gridLayout.addWidget(self.AnimeListTab, 0, 0, 1, 1)
 
+        self.StatusLabel = QLabel(self.MainWidget)
+        self.StatusLabel.setObjectName(u"StatusLabel")
+        self.StatusLabel.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+
+        self.gridLayout.addWidget(self.StatusLabel, 1, 0, 1, 1)
+
         AnimeApp.setCentralWidget(self.MainWidget)
         self.menubar = QMenuBar(AnimeApp)
         self.menubar.setObjectName(u"menubar")
@@ -236,7 +242,7 @@ class Ui_AnimeApp(object):
 
         self.retranslateUi(AnimeApp)
 
-        self.AnimeListTab.setCurrentIndex(0)
+        self.AnimeListTab.setCurrentIndex(4)
 
 
         QMetaObject.connectSlotsByName(AnimeApp)
@@ -267,6 +273,7 @@ class Ui_AnimeApp(object):
         self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.PlanningTab), QCoreApplication.translate("AnimeApp", u"Planning", None))
         self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.PausedTab), QCoreApplication.translate("AnimeApp", u"Paused", None))
         self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.DroppedTab), QCoreApplication.translate("AnimeApp", u"Dropped", None))
+        self.StatusLabel.setText(QCoreApplication.translate("AnimeApp", u"TextLabel", None))
         self.menuFile.setTitle(QCoreApplication.translate("AnimeApp", u"File", None))
         self.menuHelp.setTitle(QCoreApplication.translate("AnimeApp", u"Help", None))
         self.toolBar.setWindowTitle(QCoreApplication.translate("AnimeApp", u"toolBar", None))

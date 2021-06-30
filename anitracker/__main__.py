@@ -8,7 +8,7 @@ import sys
 import webbrowser
 from datetime import date
 from enum import Enum
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from PySide6.QtCore import *
 from PySide6.QtGui import *
@@ -70,6 +70,8 @@ class MainWindow(QMainWindow):
         self.ui = Ui_AnimeApp()
         # The central app
         self.app = AniTracker()
+        # A list of the status helpers
+        self.statuses: List[StatusHelper] = []
         # Settings menu stuff
         self.settings_menu = QTabWidget()
         self.settings_window = Ui_Settings()
@@ -119,11 +121,14 @@ class MainWindow(QMainWindow):
 
         # Setup background stuff
         self.threadpool = QThreadPool()
+        # This will trigger the status label update
+        self.status_update_worker = StatusLabelUpdater(self)
+        self.status_update_worker.update.connect(self.update_status)
         # Used for searching files in the background
-        self.update_worker = UpdateAnimeEpisodes(self.app)
+        self.update_worker = UpdateAnimeEpisodes(self)
         self.update_worker.reload_anime_eps.connect(self.reload_anime_eps)
         # This'll be the loop that automatically does so every 2 minutes
-        self._update_anime_files_loop = UpdateAnimeEpisodesLoop(self.app)
+        self._update_anime_files_loop = UpdateAnimeEpisodesLoop(self)
         self._update_anime_files_loop.reload_anime_eps.connect(self.reload_anime_eps)
         # Connecting to anilist
         self.anilist_connector = ConnectToAnilist(self)
@@ -147,6 +152,7 @@ class MainWindow(QMainWindow):
         # Start a few things in the background
         self.anilist_connector.start()
         self._update_anime_files_loop.start()
+        self.status_update_worker.start()
 
         # Setup the settings stuff
         self.settings_window.AnilistConnect.clicked.connect(
@@ -660,6 +666,16 @@ class MainWindow(QMainWindow):
                     table.setRowHidden(row, False)
                 else:
                     table.setRowHidden(row, True)
+
+    # Status update needs to be triggered
+    def update_status(self):
+        try:
+            status = self.statuses[0]
+        except IndexError:
+            self.ui.StatusLabel.setText("")
+        else:
+            self.ui.StatusLabel.setText(status.status)
+            self.ui.StatusLabel.setStyleSheet(f"color: {status.color}")
 
 
 def main():

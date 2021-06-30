@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import traceback
 from time import sleep
-from typing import TYPE_CHECKING, List
+from typing import Optional, TYPE_CHECKING, List
 
 from PySide6.QtCore import *
 from PySide6.QtGui import *
@@ -21,6 +21,8 @@ __all__ = (
     "ConnectToAnilist",
     "UpdateAnimeLists",
     "AnimeUpdateSuccess",
+    "StatusLabelUpdater",
+    "StatusHelper",
 )
 
 
@@ -43,15 +45,18 @@ class PlayEpisode(QThread):
 class UpdateAnimeEpisodes(QThread):
     reload_anime_eps = Signal()
 
-    def __init__(self, app: AniTracker) -> None:
+    def __init__(self, window) -> None:
         super().__init__()
 
-        self._app = app
+        self._window = window
 
     @Slot()
     def run(self):
         try:
-            self._app._refresh_anime_folder()
+            status = StatusHelper("Checking anime folder...")
+            self._window.statuses.append(status)
+            self._window.app._refresh_anime_folder()
+            self._window.statuses.remove(status)
             self.reload_anime_eps.emit()
         except:
             traceback.print_exc()
@@ -60,16 +65,19 @@ class UpdateAnimeEpisodes(QThread):
 class UpdateAnimeEpisodesLoop(QThread):
     reload_anime_eps = Signal()
 
-    def __init__(self, app: AniTracker) -> None:
+    def __init__(self, window) -> None:
         super().__init__()
 
-        self._app = app
+        self._window = window
 
     @Slot()
     def run(self):
         try:
             while True:
-                self._app._refresh_anime_folder()
+                status = StatusHelper("Checking anime folder...")
+                self._window.statuses.append(status)
+                self._window.app._refresh_anime_folder()
+                self._window.statuses.remove(status)
                 self.reload_anime_eps.emit()
                 sleep(120)
         except:
@@ -88,6 +96,8 @@ class ConnectToAnilist(QThread):
     @Slot()
     def run(self):
         try:
+            status = StatusHelper("Connecting to anilist...")
+            self._window.statuses.append(status)
             # Login with anilist
             self._window.app._anilist.verify()
 
@@ -99,6 +109,7 @@ class ConnectToAnilist(QThread):
                 if self.first_run:
                     self.first_run = False
                     self._window.anime_updater.start()
+            self._window.statuses.remove(status)
         except:
             traceback.print_exc()
 
@@ -118,6 +129,8 @@ class UpdateAnimeLists(QThread):
         try:
             # Load the anilist tables
             if self._window.app._anilist.authenticated:
+                status = StatusHelper("Refreshing data from anilist...")
+                self._window.statuses.append(status)
                 # First refresh from anilist
                 self._window.app.refresh_from_anilist()
                 # Now send all the animes
@@ -126,6 +139,8 @@ class UpdateAnimeLists(QThread):
                 if self.first_run:
                     self.first_run = False
                     self._window.update_worker.start()
+
+                self._window.statuses.remove(status)
         except:
             traceback.print_exc()
 
@@ -145,3 +160,26 @@ class AnimeUpdateSuccess(QThread):
             self.toggle.emit()
         except:
             traceback.print_exc()
+
+
+class StatusLabelUpdater(QThread):
+    update = Signal()
+
+    def __init__(self, window) -> None:
+        super().__init__()
+        self._window = window
+
+    @Slot()
+    def run(self):
+        try:
+            while True:
+                self.update.emit()
+                sleep(0.1)
+        except:
+            traceback.print_exc()
+
+
+class StatusHelper:
+    def __init__(self, status: str, color: Optional[str] = "rgb(36, 255, 36);") -> None:
+        self.status = status
+        self.color = color
