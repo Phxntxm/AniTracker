@@ -52,8 +52,15 @@ class MouseFilter(QObject):
 class HiddenProgressBarItem(QTableWidgetItem):
     def __init__(self, anime: AnimeCollection) -> None:
         super().__init__("")
-        self.amount = anime.progress / anime.episode_count if anime.episode_count else 0
         self.anime = anime
+
+    @property
+    def amount(self):
+        return (
+            self.anime.progress / self.anime.episode_count
+            if self.anime.episode_count
+            else 0
+        )
 
     def __lt__(self, other):
         return self.amount < other.amount
