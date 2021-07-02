@@ -39,6 +39,8 @@ class Ui_AnimeApp(object):
         self.actionReport_bug.setObjectName(u"actionReport_bug")
         self.actionSource_code = QAction(AnimeApp)
         self.actionSource_code.setObjectName(u"actionSource_code")
+        self.actionUpdateCheck = QAction(AnimeApp)
+        self.actionUpdateCheck.setObjectName(u"actionUpdateCheck")
         self.MainWidget = QWidget(AnimeApp)
         self.MainWidget.setObjectName(u"MainWidget")
         self.MainWidget.setStyleSheet(u"background-color: rgb(55, 55, 61);\n"
@@ -207,6 +209,7 @@ class Ui_AnimeApp(object):
 
         self.StatusLabel = QLabel(self.MainWidget)
         self.StatusLabel.setObjectName(u"StatusLabel")
+        self.StatusLabel.setStyleSheet(u"color: rgb(36, 255, 36);")
         self.StatusLabel.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
 
         self.gridLayout.addWidget(self.StatusLabel, 1, 0, 1, 1)
@@ -237,12 +240,14 @@ class Ui_AnimeApp(object):
         self.menuHelp.addAction(self.actionAbout)
         self.menuHelp.addAction(self.actionReport_bug)
         self.menuHelp.addAction(self.actionSource_code)
+        self.menuHelp.addSeparator()
+        self.menuHelp.addAction(self.actionUpdateCheck)
         self.toolBar.addAction(self.actionRefresh)
         self.toolBar.addAction(self.actionReload_Videos)
 
         self.retranslateUi(AnimeApp)
 
-        self.AnimeListTab.setCurrentIndex(4)
+        self.AnimeListTab.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(AnimeApp)
@@ -268,6 +273,7 @@ class Ui_AnimeApp(object):
         self.actionAbout.setText(QCoreApplication.translate("AnimeApp", u"About", None))
         self.actionReport_bug.setText(QCoreApplication.translate("AnimeApp", u"Report bug", None))
         self.actionSource_code.setText(QCoreApplication.translate("AnimeApp", u"Source code", None))
+        self.actionUpdateCheck.setText(QCoreApplication.translate("AnimeApp", u"Update", None))
         self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.WatchingTab), QCoreApplication.translate("AnimeApp", u"Watching", None))
         self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.CompletedTab), QCoreApplication.translate("AnimeApp", u"Completed", None))
         self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.PlanningTab), QCoreApplication.translate("AnimeApp", u"Planning", None))

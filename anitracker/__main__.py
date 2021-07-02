@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import functools
-import math
 import os
+import requests
 import subprocess
 import sys
 import webbrowser
@@ -14,10 +14,11 @@ from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
 
+from anitracker import __version__
 from anitracker.anitracker import AniTracker
 from anitracker.background import *
-from anitracker.media import AnimeCollection, AnimeFile, UserStatus, anime
-from anitracker.ui import Ui_AnimeApp, Ui_AnimeInfo, Ui_Settings, Ui_About
+from anitracker.media import AnimeCollection, AnimeFile, UserStatus
+from anitracker.ui import Ui_About, Ui_AnimeApp, Ui_AnimeInfo, Ui_Settings
 
 
 class MouseFilter(QObject):
@@ -130,24 +131,33 @@ class MainWindow(QMainWindow):
         self.threadpool = QThreadPool()
         # This will trigger the status label update
         self.status_update_worker = StatusLabelUpdater(self)
+        self.status_update_worker.setTerminationEnabled(True)
         self.status_update_worker.update.connect(self.update_status)
         # Used for searching files in the background
         self.update_worker = UpdateAnimeEpisodes(self)
+        self.update_worker.setTerminationEnabled(True)
         self.update_worker.reload_anime_eps.connect(self.reload_anime_eps)
         # This'll be the loop that automatically does so every 2 minutes
         self._update_anime_files_loop = UpdateAnimeEpisodesLoop(self)
+        self._update_anime_files_loop.setTerminationEnabled(True)
         self._update_anime_files_loop.reload_anime_eps.connect(self.reload_anime_eps)
         # Connecting to anilist
         self.anilist_connector = ConnectToAnilist(self)
+        self.anilist_connector.setTerminationEnabled(True)
         self.anilist_connector.update_label.connect(
             self.settings_window.AnilistConnectedAccountLabel.setText
         )
         # Anime updates
         self.anime_updater = UpdateAnimeLists(self)
+        self.anime_updater.setTerminationEnabled(True)
         self.anime_updater.handle_anime_updates.connect(self.handle_anime_updates)
         # The success update label
         self.update_success = AnimeUpdateSuccess(self.anime_window)
+        self.update_success.setTerminationEnabled(True)
         self.update_success.toggle.connect(self.toggle_success)
+        # Will check for update in the background
+        self.update_checker = UpdateChecker(self)
+        self.update_checker.setTerminationEnabled(True)
 
         # Connect quitting calls
         self._qapp.aboutToQuit.connect(self.update_worker.quit)
@@ -181,6 +191,7 @@ class MainWindow(QMainWindow):
         self.ui.actionAbout.triggered.connect(self.open_about)
         self.ui.actionReport_bug.triggered.connect(self.open_issue_tracker)
         self.ui.actionSource_code.triggered.connect(self.open_repo)
+        self.ui.actionUpdateCheck.triggered.connect(self.update_checker.start)
         # Setup initial settings info
         try:
             self.settings_window.AnimeFolderLineEdit.setText(
@@ -248,6 +259,20 @@ class MainWindow(QMainWindow):
 
             # Setting headers has to come after
             table.setHorizontalHeaderLabels(["Progress"] + pretty_headers)
+
+    def stop_threads(self):
+        for thread in [
+            self.status_update_worker,
+            self.update_worker,
+            self._update_anime_files_loop,
+            self.anilist_connector,
+            self.anime_updater,
+            self.update_checker,
+            self.update_success,
+        ]:
+            if thread.isRunning():
+                thread.terminate()
+                thread.wait()
 
     # Misc methods
     @property
@@ -648,6 +673,7 @@ class MainWindow(QMainWindow):
         widget = self.about_widget = QWidget()
         about = Ui_About()
         about.setupUi(widget)
+        about.VersionLabel.setText(f"Version: {__version__}")
         about.label.linkActivated.connect(webbrowser.open)
         widget.show()
         widget.setFixedSize(widget.size())
@@ -692,7 +718,28 @@ def main():
     window.show()
     window.setFixedSize(window.size())
 
-    sys.exit(app.exec())
+    # First replace the file situation if it's there's been some partial/finished download
+    if sys.platform.startswith("win32") and getattr(sys, "frozen", False):
+        d = os.path.dirname(sys.executable)
+
+        try:
+            # We have a backup file
+            os.stat(f"{d}\\anitracker.exe.bak")
+            try:
+                os.stat(f"{d}\\anitracker.exe")
+            # Just a backup, download succeeded
+            except FileNotFoundError:
+                os.rename(f"{d}\\anitracker.exe.bak", f"{d}\\anitracker.exe")
+            # We have a main and backup... download failed, remove partial download
+            else:
+                if not sys.executable.endswith(".bak"):
+                    os.remove(f"{d}\\anitracker.exe.bak")
+        # No backup file, no download happened, we don't care
+        except FileNotFoundError:
+            pass
+    ret = app.exec()
+    window.stop_threads()
+    sys.exit(ret)
 
 
 if __name__ == "__main__":

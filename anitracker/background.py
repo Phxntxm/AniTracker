@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+import os
+import shlex
+import subprocess
+import sys
+import tempfile
 import traceback
 from time import sleep
-from typing import Optional, TYPE_CHECKING, List
+from typing import TYPE_CHECKING, List, Optional
 
+import requests
 from PySide6.QtCore import *
 from PySide6.QtGui import *
 from PySide6.QtWidgets import *
@@ -22,6 +28,7 @@ __all__ = (
     "UpdateAnimeLists",
     "AnimeUpdateSuccess",
     "StatusLabelUpdater",
+    "UpdateChecker",
     "StatusHelper",
 )
 
@@ -175,6 +182,94 @@ class StatusLabelUpdater(QThread):
             while True:
                 self.update.emit()
                 sleep(0.1)
+        except:
+            traceback.print_exc()
+
+
+class UpdateChecker(QThread):
+    def __init__(self, window) -> None:
+        super().__init__()
+        self._window = window
+
+    def download_helper(self, url: str):
+        # Get the application path
+        application_path = os.path.abspath(sys.executable)
+        # Open tmp file, don't delete after
+        with tempfile.NamedTemporaryFile(delete=False) as f:
+            # Stream request to get update of download progress
+            with requests.get(url, stream=True) as downloaded:
+                # Setup bytes info
+                total_size = int(downloaded.headers.get("content-length", 0))
+                block_size = 1024
+                total_downloaded = 0
+
+                for block in downloaded.iter_content(block_size):
+                    total_downloaded += len(block)
+
+                    f.write(block)
+
+                    yield f"Downloaded {total_downloaded/1000000:.2f}/{total_size/1000000:.2f} MB"
+
+            # Done downloading, replace executable
+            if sys.platform.startswith("linux"):
+                os.replace(f.name, application_path)
+                os.chmod(application_path, 0o775)
+                exe_path = application_path
+            # On windows, next reboot it will detect the file situation and replace it
+            elif sys.platform.startswith("win32"):
+                os.rename(application_path, f"{application_path}.bak")
+                exe_path = f"{application_path}.bak"
+
+            yield "Download finished! Restarting in 3 seconds"
+            sleep(3)
+            os.execv(exe_path, sys.argv)
+
+    @Slot()
+    def run(self):
+        try:
+            # First make sure we can actually update this
+            if not getattr(sys, "frozen", False):
+                raise TypeError("Cannot update, not an executable")
+
+            # Append checking to status bar
+            status = StatusHelper("Checking for update")
+            self._window.statuses.append(status)
+
+            # Get latest version from URL
+            with requests.get(
+                "https://github.com/Phxntxm/AniTracker/releases/latest"
+            ) as r:
+                version = r.url.rsplit("v")[1]
+
+            from anitracker import __version__
+
+            # There should only ever be the latest, so if they're not equal at all
+            # then there should be an update
+            if version != __version__:
+                # Append running update to statuses
+                status.status = "Preparing update"
+
+                # On linux, write to temp file then replace once it's done
+                if sys.platform.startswith("linux"):
+                    url = "https://github.com/Phxntxm/AniTracker/releases/latest/download/anitracker"
+                # On windows
+                else:
+                    url = "https://github.com/Phxntxm/AniTracker/releases/latest/download/anitracker.exe"
+
+                # Update status for each update in the download streamer
+                for update in self.download_helper(url):
+                    status.status = update
+
+                # Let them know we're done
+                status.status = "Update successful! You can restart now"
+                sleep(5)
+            else:
+                status.status = "Already up to date!"
+                sleep(2)
+
+            # After all is said and done, remove our status
+            self._window.statuses.remove(status)
+
         except:
             traceback.print_exc()
 
