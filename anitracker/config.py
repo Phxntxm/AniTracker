@@ -4,7 +4,7 @@ from typing import Any
 import toml
 
 CONFIG_LOCATION = pathlib.Path("~/.config/anitracker/")
-DEFAULT_SETTINGS = {"subtitle": "en", "skip_songs_signs": True}
+DEFAULT_SETTINGS = {"subtitle": "eng", "skip_songs_signs": True}
 VALUE_TYPE = Any
 
 

@@ -5,7 +5,8 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import DefaultDict, Dict, Generator, List, Union
+from typing import DefaultDict, Dict, Generator, Iterator, List, Optional, Tuple, Union
+import anitopy
 
 import ffmpeg
 from rapidfuzz import fuzz
@@ -21,11 +22,18 @@ class AniTracker:
         self._animes: Dict[int, AnimeCollection] = {}
 
         self._anilist = AniList()
+        self._episodes: Dict[Tuple[str, int, int], AnimeFile] = {}
         self._anilist.from_config(self._config)
 
     @property
     def animes(self) -> Dict[int, AnimeCollection]:
         return self._animes
+
+    def missing_eps(self, anime: AnimeCollection) -> str:
+        have = [ep.episode_number for ep in self.get_episodes(anime)]
+        missing = [f"{n}" for n in range(1, anime.episode_count) if n not in have]
+
+        return ", ".join(missing)
 
     def get_anime(
         self, title: str = "", id: Union[int, None] = None
@@ -67,14 +75,41 @@ class AniTracker:
         anime = self.animes[112609]
         anime.edit(self._anilist, notes="Test update")
 
-    def play_episode(self, episode: AnimeFile) -> bool:
+    def get_episodes(self, anime: AnimeCollection) -> List[AnimeFile]:
+        l = []
+
+        for key, value in self._episodes.items():
+            if key[0] in anime.titles:
+                l.append(value)
+
+        return l
+
+    def get_episode(
+        self, anime: AnimeCollection, episode_num: int
+    ) -> Optional[AnimeFile]:
+        for title in anime.titles:
+            episode = self._episodes.get((title, episode_num))
+
+            if episode:
+                return episode
+
+        return None
+
+    def play_episode(self, anime: AnimeCollection, episode_num: int) -> bool:
+        episode = self.get_episode(anime, episode_num)
+
+        if episode is None:
+            return
+
+        # Load the subtitles for this file before proceeding
+        episode.load_subtitles()
+
         for sub_track in episode.subtitles:
             if sub_track.language == self._config["subtitle"]:
                 if sub_track.is_songs_signs and self._config["skip_songs_signs"]:
                     continue
                 else:
-                    self._play_episode(episode, subtitle_id=sub_track.id)
-                    return
+                    return self._play_episode(episode, subtitle_id=sub_track.id)
 
         # If we couldn't find a subtitle track, just start it
         return self._play_episode(episode)
@@ -173,50 +208,29 @@ class AniTracker:
         coll.edit(self._anilist, **vars)
 
     def _refresh_anime_folder(self):
-        eps = DefaultDict(list)
         try:
             dir = Path(self._config["animedir"]).expanduser()
         # No config setup for user, can't get anime
         except (KeyError, TypeError):
             return
 
+        # Clear the dict
+        self._episodes.clear()
         # Search through directory
         for anime in self._probe_dir(dir):
-            # Get the collection based on name
-            collection = self.get_anime(anime.title)
-
-            # Only update episode if we find the collection
-            if collection:
-                eps[collection].append(anime)
-
-        # Now that we've searched, clear the collection's episode list then update them
-        # based on the new list of episodes found
-        for anime in self.animes.values():
-            anime.episodes.clear()
-
-            for ep in eps.get(anime, []):
-                anime.update_episode(ep)
-
-    def _mediainfo(self, path: Path) -> Dict:
-        try:
-            data = ffmpeg.probe(path)
-        except ffmpeg.Error:
-            return {}
-        else:
-            return data
+            self._episodes[(anime.title, anime.episode_number)] = anime
 
     def _probe_dir(self, path: Path) -> Generator[AnimeFile, None, None]:
+        # Look at every file in the path
         for file in path.rglob("*"):
+            # Ignore directories, recursion is handled by rglob
             if file.is_dir():
                 continue
-            data = self._mediainfo(file)
-            if not data:
-                continue
-            anime = AnimeFile.from_data(data)
 
-            if data:
-                # Search for a video track
-                for stream in data["streams"]:
-                    if stream["codec_type"] == "video":
-                        yield anime
-                        break
+            # If we don't know the title or the episode number, then
+            # we don't care about this file
+            data = anitopy.parse(file.name)
+            data["file_name"] = str(file)
+
+            if data.get("anime_title") and data.get("episode_number"):
+                yield AnimeFile.from_data(data)

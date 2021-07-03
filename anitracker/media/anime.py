@@ -6,6 +6,8 @@ from enum import Enum, auto
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
+import ffmpeg
+
 if TYPE_CHECKING:
     from anitracker.sync import AniList
 
@@ -60,7 +62,6 @@ class AnimeCollection:
     genres: List[str]
     tags: List[Tuple[str, int]]
     studio: str
-    episodes: Dict[int, AnimeFile] = field(default_factory=dict)
 
     def __repr__(self) -> str:
         return f"<AnimeCollection(id={self.id} user_status={self.user_status} title={self.english_title})>"
@@ -72,13 +73,6 @@ class AnimeCollection:
 
     def __eq__(self, o: object) -> bool:
         return isinstance(o, AnimeCollection) and self.id == o.id
-
-    @property
-    def missing_eps(self) -> str:
-        missing = [
-            str(i + 1) for i in range(self.episode_count) if i + 1 not in self.episodes
-        ]
-        return ", ".join(missing)
 
     @property
     def progress_bar(self) -> QProgressBar:
@@ -295,9 +289,6 @@ class AnimeCollection:
     def delete(self, sync: AniList):
         sync.gql("delete_entry", {"id": self._list_id})
 
-    def update_episode(self, file: AnimeFile):
-        self.episodes[file.episode_number] = file
-
 
 class AnimeFile:
     title: str
@@ -308,29 +299,38 @@ class AnimeFile:
 
     @classmethod
     def from_data(cls, data: Dict):
-        fullpath = Path(data["format"]["filename"])
         # TODO: Probably create my own parser, this fails on e.g.
         # [Samir755] Violet Evergarden - 05- You Write Letters That Bring People Together.mkv
         # (No space after the episode number)
-        parsed_data = anitopy.parse(fullpath.name)
 
         inst = cls()
-        inst.title = parsed_data.get("anime_title", "Unknown")
-        inst.episode_title = parsed_data.get("episode_title", "Unknown")
-        inst.episode_number = int(parsed_data.get("episode_number", 0))
-        inst.file = data["format"]["filename"]
+        inst.title = data.get("anime_title", "Unknown")
+        inst.episode_title = data.get("episode_title", "Unknown")
+        inst.episode_number = int(data.get("episode_number", 0))
+        inst.file = data["file_name"]
         inst.subtitles = []
+
+        return inst
+
+    def _mediainfo(self) -> Dict:
+        try:
+            data = ffmpeg.probe(self.file)
+        except ffmpeg.Error:
+            return {}
+        else:
+            return data
+
+    def load_subtitles(self):
+        self.subtitles = []
 
         sub_id = 1
 
-        for stream in data["streams"]:
+        for stream in self._mediainfo().get("streams", []):
             if stream["codec_type"] == "subtitle":
                 # Insert the sub_id into the data
                 stream["tags"]["id"] = sub_id
-                inst.subtitles.append(SubtitleTrack.from_data(stream))
+                self.subtitles.append(SubtitleTrack.from_data(stream))
                 sub_id += 1
-
-        return inst
 
 
 class SubtitleTrack:

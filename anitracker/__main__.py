@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import functools
 import os
-import requests
+import pycountry
 import subprocess
 import sys
 import webbrowser
@@ -44,7 +44,7 @@ class MouseFilter(QObject):
                 # Middle click plays the episode
                 if event.button() is Qt.MiddleButton:
                     self._playing_episode = PlayEpisode(
-                        item.anime.episodes[item.anime.progress + 1], self.parent()
+                        item.anime, item.anime.progress + 1, self.parent()
                     )
                     self._playing_episode.start()
         return super().eventFilter(watched, event)
@@ -81,9 +81,9 @@ class MainWindow(QMainWindow):
         # A list of the status helpers
         self.statuses: List[StatusHelper] = []
         # Settings menu stuff
-        self.settings_menu = QTabWidget()
+        self.settings_widget = QTabWidget()
         self.settings_window = Ui_Settings()
-        self.settings_window.setupUi(self.settings_menu)
+        self.settings_window.setupUi(self.settings_widget)
         # Anime settings stuff
         self.anime_menu = QTabWidget()
         self.anime_window = Ui_AnimeInfo()
@@ -159,13 +159,6 @@ class MainWindow(QMainWindow):
         self.update_checker = UpdateChecker(self)
         self.update_checker.setTerminationEnabled(True)
 
-        # Connect quitting calls
-        self._qapp.aboutToQuit.connect(self.update_worker.quit)
-        self._qapp.aboutToQuit.connect(self._update_anime_files_loop.quit)
-        self._qapp.aboutToQuit.connect(self.anilist_connector.quit)
-        self._qapp.aboutToQuit.connect(self.anime_updater.quit)
-        self._qapp.aboutToQuit.connect(self.update_success.quit)
-
         # Start a few things in the background
         self.anilist_connector.start()
         self._update_anime_files_loop.start()
@@ -179,11 +172,16 @@ class MainWindow(QMainWindow):
             self.anilist_code_confirm
         )
         self.settings_window.AnimeFolderBrowse.clicked.connect(self.select_anime_path)
-        self.settings_window.SubtitleLanguageLineEdit.textChanged.connect(
-            self.update_subtitles
-        )
         self.settings_window.IgnoreSongsSignsCheckbox.stateChanged.connect(
             self.update_songs_signs
+        )
+
+        self.settings_window.SubtitleLanguage.addItems(
+            sorted([l.name for l in pycountry.languages])
+        )
+
+        self.settings_window.SubtitleLanguage.currentIndexChanged.connect(
+            self.change_language
         )
         self.ui.actionSettings.triggered.connect(self.open_settings)
         self.ui.actionRefresh.triggered.connect(self.anime_updater.start)
@@ -200,8 +198,8 @@ class MainWindow(QMainWindow):
         except KeyError:
             pass
         try:
-            self.settings_window.SubtitleLanguageLineEdit.setText(
-                self.app._config["subtitle"]
+            self.settings_window.SubtitleLanguage.setCurrentText(
+                pycountry.languages.get(alpha_3=self.app._config["subtitle"]).name
             )
         except KeyError:
             pass
@@ -369,8 +367,8 @@ class MainWindow(QMainWindow):
         if anime.episode_count == 0:
             bar.setVisible(False)
 
-        if anime.missing_eps:
-            tt = f"Missing episodes: {anime.missing_eps}"
+        if missing := self.app.missing_eps(anime):
+            tt = f"Missing episodes: {missing}"
         else:
             tt = "Found all episodes"
 
@@ -413,8 +411,8 @@ class MainWindow(QMainWindow):
                 Qt.UserRole, anime.progress / anime.episode_count
             )
 
-        if anime.missing_eps:
-            tt = f"Missing episodes: {anime.missing_eps}"
+        if missing := self.app.missing_eps(anime):
+            tt = f"Missing episodes: {missing}"
         else:
             tt = "Found all episodes"
 
@@ -459,8 +457,8 @@ class MainWindow(QMainWindow):
 
     # Settings action was clicked
     def open_settings(self):
-        self.settings_menu.show()
-        self.settings_menu.setFixedSize(self.settings_menu.size())
+        self.settings_widget.show()
+        self.settings_widget.setFixedSize(self.settings_widget.size())
 
     # Confirm anilist code
     def anilist_code_confirm(self):
@@ -532,23 +530,24 @@ class MainWindow(QMainWindow):
         next_ep = anime.progress + 1
 
         # Followup setting changes
-        if next_ep not in anime.episodes:
+        if not self.app.get_episode(anime, next_ep):
             play_next.setEnabled(False)
 
-        if anime.episodes:
-            folder = os.path.dirname(anime.episodes[sorted(anime.episodes)[0]].file)
+        if eps := self.app.get_episodes(anime):
+            folder = os.path.dirname(
+                sorted(eps, key=lambda k: k.episode_number)[0].file
+            )
         elif self.app._config["animedir"] is not None:
             folder = self.app._config["animedir"]
         else:
             folder = None
             open_folder.setEnabled(False)
 
-        if anime.episodes:
-            for count in sorted(anime.episodes):
-                ep = anime.episodes[count]
-                act = play_menu.addAction(f"Episode {count}")
-                play_opts[act] = ep
-        else:
+        for ep in sorted(self.app.get_episodes(anime), key=lambda k: k.episode_number):
+            act = play_menu.addAction(f"Episode {ep.episode_number}")
+            play_opts[act] = ep.episode_number
+
+        if not play_opts:
             play_menu.setEnabled(False)
 
         action = menu.exec(QCursor.pos())
@@ -577,10 +576,10 @@ class MainWindow(QMainWindow):
                     ["xdg-open", folder],
                 )
         elif action == play_next:
-            self._playing_episode = PlayEpisode(anime.episodes[next_ep], self)
+            self._playing_episode = PlayEpisode(anime, next_ep, self)
             self._playing_episode.start()
         elif action in play_opts:
-            self._playing_episode = PlayEpisode(play_opts[action], self)
+            self._playing_episode = PlayEpisode(anime, play_opts[action], self)
             self._playing_episode.start()
 
         self.handle_anime_updates(list(self.app.animes.values()))
@@ -710,13 +709,20 @@ class MainWindow(QMainWindow):
             self.ui.StatusLabel.setText(status.status)
             self.ui.StatusLabel.setStyleSheet(f"color: {status.color}")
 
+    # Language option was changed
+    def change_language(self, index):
+        lang = self.settings_window.SubtitleLanguage.itemText(index)
+        alpha_3 = pycountry.languages.get(name=lang).alpha_3
+
+        self.app._config["subtitle"] = alpha_3
+
 
 def main():
     app = QApplication(sys.argv)
 
     window = MainWindow(app)
-    window.show()
     window.setFixedSize(window.size())
+    window.show()
 
     # First replace the file situation if it's there's been some partial/finished download
     if sys.platform.startswith("win32") and getattr(sys, "frozen", False):

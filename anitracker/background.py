@@ -34,16 +34,17 @@ __all__ = (
 
 
 class PlayEpisode(QThread):
-    def __init__(self, episode: AnimeFile, window) -> None:
+    def __init__(self, anime: AnimeCollection, episode_number: int, window) -> None:
         super().__init__()
 
-        self._episode = episode
+        self._anime = anime
+        self._episode = episode_number
         self._window = window
 
     @Slot()
     def run(self):
         try:
-            if self._window.app.play_episode(self._episode):
+            if self._window.app.play_episode(self._anime, self._episode):
                 self._window.anime_updater.start()
         except:
             traceback.print_exc()
