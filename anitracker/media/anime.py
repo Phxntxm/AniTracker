@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from enum import Enum, auto
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import ffmpeg
 
@@ -234,7 +234,7 @@ class AnimeCollection:
         started_at: Optional[date] = None,
         completed_at: Optional[date] = None,
     ):
-        payload = {"id": self._list_id}
+        payload: Dict[str, Any] = {"id": self._list_id}
 
         if status is not None:
             payload["status"] = status.name

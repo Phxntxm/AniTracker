@@ -8,7 +8,7 @@ import sys
 import webbrowser
 from datetime import date
 from enum import Enum
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Union, cast
 
 from PySide6.QtCore import *
 from PySide6.QtGui import *
@@ -26,25 +26,31 @@ class MouseFilter(QObject):
         super().__init__(parent=parent)
 
         self._table = table
-        self._playing_episode: Union[AnimeFile, None] = None
+        self._playing_episode: Union[PlayEpisode, None] = None
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        parent = cast(MainWindow, self.parent())
+
+        if not isinstance(event, QMouseEvent):
+            return False
+
         # If we've pressed and released
         if event.type() is QEvent.MouseButtonDblClick:
             # Get the item at that position
             point = event.position().toPoint()
-            self.parent().open_anime_settings(self._table.itemAt(point).anime)
+            item = cast(AnimeWidgetItem, self._table.itemAt(point))
+            parent.open_anime_settings(item.anime)
 
         if event.type() is QEvent.MouseButtonRelease:
             # Get the item at that position
-            item = self._table.itemAt(event.position().toPoint())
+            item = cast(AnimeWidgetItem, self._table.itemAt(event.position().toPoint()))
 
             # If we found one, then do the things
             if item is not None:
                 # Middle click plays the episode
                 if event.button() is Qt.MiddleButton:
                     self._playing_episode = PlayEpisode(
-                        item.anime, item.anime.progress + 1, self.parent()
+                        item.anime, item.anime.progress + 1, parent
                     )
                     self._playing_episode.start()
         return super().eventFilter(watched, event)
@@ -65,6 +71,13 @@ class HiddenProgressBarItem(QTableWidgetItem):
 
     def __lt__(self, other):
         return self.amount < other.amount
+
+
+class AnimeWidgetItem(QTableWidgetItem):
+    def __init__(self, anime: AnimeCollection):
+        super().__init__()
+
+        self.anime = anime
 
 
 class MainWindow(QMainWindow):
@@ -124,7 +137,7 @@ class MainWindow(QMainWindow):
             margin-left: 500px;
             """
         )
-        self.filter_anime.textChanged.connect(self.filter_row)
+        self.filter_anime.textChanged.connect(self.filter_row)  # type: ignore
         self.ui.toolBar.addWidget(self.filter_anime)
 
         # Setup background stuff
@@ -132,29 +145,29 @@ class MainWindow(QMainWindow):
         # This will trigger the status label update
         self.status_update_worker = StatusLabelUpdater(self)
         self.status_update_worker.setTerminationEnabled(True)
-        self.status_update_worker.update.connect(self.update_status)
+        self.status_update_worker.update.connect(self.update_status)  # type: ignore
         # Used for searching files in the background
         self.update_worker = UpdateAnimeEpisodes(self)
         self.update_worker.setTerminationEnabled(True)
-        self.update_worker.reload_anime_eps.connect(self.reload_anime_eps)
+        self.update_worker.reload_anime_eps.connect(self.reload_anime_eps)  # type: ignore
         # This'll be the loop that automatically does so every 2 minutes
         self._update_anime_files_loop = UpdateAnimeEpisodesLoop(self)
         self._update_anime_files_loop.setTerminationEnabled(True)
-        self._update_anime_files_loop.reload_anime_eps.connect(self.reload_anime_eps)
+        self._update_anime_files_loop.reload_anime_eps.connect(self.reload_anime_eps)  # type: ignore
         # Connecting to anilist
         self.anilist_connector = ConnectToAnilist(self)
         self.anilist_connector.setTerminationEnabled(True)
-        self.anilist_connector.update_label.connect(
+        self.anilist_connector.update_label.connect(  # type: ignore
             self.settings_window.AnilistConnectedAccountLabel.setText
         )
         # Anime updates
         self.anime_updater = UpdateAnimeLists(self)
         self.anime_updater.setTerminationEnabled(True)
-        self.anime_updater.handle_anime_updates.connect(self.handle_anime_updates)
+        self.anime_updater.handle_anime_updates.connect(self.handle_anime_updates)  # type: ignore
         # The success update label
-        self.update_success = AnimeUpdateSuccess(self.anime_window)
+        self.update_success = AnimeUpdateSuccess()
         self.update_success.setTerminationEnabled(True)
-        self.update_success.toggle.connect(self.toggle_success)
+        self.update_success.toggle.connect(self.toggle_success)  # type: ignore
         # Will check for update in the background
         self.update_checker = UpdateChecker(self)
         self.update_checker.setTerminationEnabled(True)
@@ -165,14 +178,14 @@ class MainWindow(QMainWindow):
         self.status_update_worker.start()
 
         # Setup the settings stuff
-        self.settings_window.AnilistConnect.clicked.connect(
+        self.settings_window.AnilistConnect.clicked.connect(  # type: ignore
             self.app._anilist.open_oauth
         )
-        self.settings_window.AnilistCodeConfirm.clicked.connect(
+        self.settings_window.AnilistCodeConfirm.clicked.connect(  # type: ignore
             self.anilist_code_confirm
         )
-        self.settings_window.AnimeFolderBrowse.clicked.connect(self.select_anime_path)
-        self.settings_window.IgnoreSongsSignsCheckbox.stateChanged.connect(
+        self.settings_window.AnimeFolderBrowse.clicked.connect(self.select_anime_path)  # type: ignore
+        self.settings_window.IgnoreSongsSignsCheckbox.stateChanged.connect(  # type: ignore
             self.update_songs_signs
         )
 
@@ -180,16 +193,16 @@ class MainWindow(QMainWindow):
             sorted([l.name for l in pycountry.languages])
         )
 
-        self.settings_window.SubtitleLanguage.currentIndexChanged.connect(
+        self.settings_window.SubtitleLanguage.currentIndexChanged.connect(  # type: ignore
             self.change_language
         )
-        self.ui.actionSettings.triggered.connect(self.open_settings)
-        self.ui.actionRefresh.triggered.connect(self.anime_updater.start)
-        self.ui.actionReload_Videos.triggered.connect(self.update_worker.start)
-        self.ui.actionAbout.triggered.connect(self.open_about)
-        self.ui.actionReport_bug.triggered.connect(self.open_issue_tracker)
-        self.ui.actionSource_code.triggered.connect(self.open_repo)
-        self.ui.actionUpdateCheck.triggered.connect(self.update_checker.start)
+        self.ui.actionSettings.triggered.connect(self.open_settings)  # type: ignore
+        self.ui.actionRefresh.triggered.connect(self.anime_updater.start)  # type: ignore
+        self.ui.actionReload_Videos.triggered.connect(self.update_worker.start)  # type: ignore
+        self.ui.actionAbout.triggered.connect(self.open_about)  # type: ignore
+        self.ui.actionReport_bug.triggered.connect(self.open_issue_tracker)  # type: ignore
+        self.ui.actionSource_code.triggered.connect(self.open_repo)  # type: ignore
+        self.ui.actionUpdateCheck.triggered.connect(self.update_checker.start)  # type: ignore
         # Setup initial settings info
         try:
             self.settings_window.AnimeFolderLineEdit.setText(
@@ -215,22 +228,22 @@ class MainWindow(QMainWindow):
 
         for table in self.tables:
             # Createa menu per table
-            menu = table.menu = QMenu(self.ui.AnimeListTab)
+            menu = table.menu = QMenu(self.ui.AnimeListTab)  # type: ignore
             menu.setStyleSheet("QMenu::item:selected {background-color: #007fd4}")
-            menu.triggered.connect(self.header_changed)
+            menu.triggered.connect(self.header_changed)  # type: ignore
             # Set the custom context menu on the *header*, this is how
             # we switch which columns are visible
             table.horizontalHeader().setContextMenuPolicy(
                 Qt.ContextMenuPolicy.CustomContextMenu
             )
             # Connect it to the modifying of the table
-            table.horizontalHeader().customContextMenuRequested.connect(
+            table.horizontalHeader().customContextMenuRequested.connect(  # type: ignore
                 self.open_header_menu
             )
             table.horizontalHeader().setMinimumSectionSize(50)
             # Now set the custom context menu on the table itself
             table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-            table.customContextMenuRequested.connect(self.open_anime_context_menu)
+            table.customContextMenuRequested.connect(self.open_anime_context_menu)  # type: ignore
             table.viewport().installEventFilter(MouseFilter(table, self))
 
             # Insert the column for progress first
@@ -279,7 +292,9 @@ class MainWindow(QMainWindow):
 
     @property
     def current_table(self) -> QTableWidget:
-        return self.ui.AnimeListTab.currentWidget().findChild(QTableWidget)
+        return cast(
+            QTableWidget, self.ui.AnimeListTab.currentWidget().findChild(QTableWidget)
+        )
 
     @property
     def tables(self) -> List[QTableWidget]:
@@ -291,7 +306,7 @@ class MainWindow(QMainWindow):
             self.ui.PausedTable,
         ]
 
-    def get_table(self, status: UserStatus):
+    def get_table(self, status: UserStatus) -> QTableWidget:
         if status is UserStatus.COMPLETED:
             return self.ui.CompletedTable
         elif status in (UserStatus.CURRENT, UserStatus.REPEATING):
@@ -302,6 +317,8 @@ class MainWindow(QMainWindow):
             return self.ui.DroppedTable
         elif status is UserStatus.PAUSED:
             return self.ui.PausedTable
+
+        raise TypeError(f"Cannot find table for {status}")
 
     def get_headers(self, table: QTableWidget) -> Dict[str, bool]:
         """Returns the headers specified for this table"""
@@ -385,12 +402,11 @@ class MainWindow(QMainWindow):
             elif isinstance(piece, date):
                 piece = str(piece)
 
-            item = QTableWidgetItem()
+            item = AnimeWidgetItem(anime)
             # item.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             # item.customContextMenuRequested.connect(self.open_anime_context_menu)
             item.setData(Qt.DisplayRole, piece)
             # Attach the anime object to it so we can use it later
-            item.anime = anime
             item.setToolTip(tt)
             table.setItem(row_pos, index, item)
 
@@ -403,7 +419,7 @@ class MainWindow(QMainWindow):
 
     def update_row(self, table: QTableWidget, row: int, anime: AnimeCollection):
         # Set the progress bar's data
-        bar = table.cellWidget(row, 0).findChild(QProgressBar)
+        bar = cast(QProgressBar, table.cellWidget(row, 0).findChild(QProgressBar))
         bar.setMaximum(anime.episode_count)
         bar.setValue(anime.progress)
         if anime.episode_count:
@@ -447,7 +463,7 @@ class MainWindow(QMainWindow):
         s.AnimeEpisodesLabel.setText(str(anime.episode_count))
         s.AnimeNotes.setText(anime.notes)
         s.AnimeUserScore.setValue(anime.score)
-        s.AnimeUpdateButton.clicked.connect(
+        s.AnimeUpdateButton.clicked.connect(  # type: ignore
             functools.partial(self.update_anime_from_settings, anime)
         )
         m.show()
@@ -487,12 +503,12 @@ class MainWindow(QMainWindow):
 
     # Header was right clicked
     def open_header_menu(self, point: QPoint):
-        self.current_table.menu.exec(self.ui.AnimeListTab.mapToGlobal(point))
+        self.current_table.menu.exec(self.ui.AnimeListTab.mapToGlobal(point))  # type: ignore
 
     # Anime in table was right clicked
     def open_anime_context_menu(self, point: QPoint):
         # Get attrs that will be used a bit
-        anime: AnimeCollection = self.current_table.selectedItems()[0].anime
+        anime: AnimeCollection = self.current_table.selectedItems()[0].anime  # type: ignore
 
         # Setup the menu settings
         menu = QMenu(self.current_table)
@@ -568,7 +584,7 @@ class MainWindow(QMainWindow):
         elif action == remove:
             anime.delete(self.app._anilist)
             del self.app._animes[anime.id]
-        elif action == open_folder:
+        elif action == open_folder and folder is not None:
             if sys.platform.startswith("win32"):
                 subprocess.Popen(["start", folder], shell=True)
             elif sys.platform.startswith("linux"):
@@ -593,12 +609,6 @@ class MainWindow(QMainWindow):
         self.settings_window.AnimeFolderLineEdit.setText(dir)
         self.app._config["animedir"] = dir
 
-    # Line edit for subtitle language was changed
-    def update_subtitles(self):
-        self.app._config[
-            "subtitle"
-        ] = self.settings_window.SubtitleLanguageLineEdit.text()
-
     # Checkbox for songs/signs was changed
     def update_songs_signs(self):
         self.app._config["skip_songs_signs"] = (
@@ -618,7 +628,7 @@ class MainWindow(QMainWindow):
             # Reverse through the range, so that removal of rows
             # doesn't mess up what we're looking at
             for row in range(table.rowCount() - 1, -1, -1):
-                anime: AnimeCollection = table.item(row, 0).anime
+                anime: AnimeCollection = table.item(row, 0).anime  # type: ignore
 
                 # If the anime is not in the list, remove it from the table
                 if anime not in animes:
@@ -635,7 +645,7 @@ class MainWindow(QMainWindow):
             # Loop through every row in the table it should be in
             for row in range(table.rowCount()):
                 # Found it
-                if table.item(row, 0).anime == anime:
+                if cast(AnimeWidgetItem, table.item(row, 0)).anime == anime:
                     found = True
                     self.update_row(table, row, anime)
 
@@ -644,11 +654,12 @@ class MainWindow(QMainWindow):
                 self.insert_row(table, anime)
 
         # Make sure things are sorted properly
-        if table.isSortingEnabled():
-            # This will immediately trigger a sort based on the sort option
-            # selected, so we just set it to True again, since as far as I can
-            # tell there's no way to GET the current sort option
-            table.setSortingEnabled(True)
+        for table in self.tables:
+            if table.isSortingEnabled():
+                # This will immediately trigger a sort based on the sort option
+                # selected, so we just set it to True again, since as far as I can
+                # tell there's no way to GET the current sort option
+                table.setSortingEnabled(True)
 
     # Toggle visible success label
     def toggle_success(self):
@@ -658,7 +669,7 @@ class MainWindow(QMainWindow):
 
     # Files were refreshed, update anime tooltip info
     def reload_anime_eps(self):
-        self.handle_anime_updates(self.app.animes.values())
+        self.handle_anime_updates(list(self.app.animes.values()))
 
     # Anime settings submit button was clicked
     def update_anime_from_settings(self, anime: AnimeCollection):
@@ -673,7 +684,7 @@ class MainWindow(QMainWindow):
         about = Ui_About()
         about.setupUi(widget)
         about.VersionLabel.setText(f"Version: {__version__}")
-        about.label.linkActivated.connect(webbrowser.open)
+        about.label.linkActivated.connect(webbrowser.open)  # type: ignore
         widget.show()
         widget.setFixedSize(widget.size())
 
@@ -689,7 +700,7 @@ class MainWindow(QMainWindow):
     def filter_row(self, text: str):
         for table in self.tables:
             for row in range(table.rowCount()):
-                anime: AnimeCollection = table.item(row, 0).anime
+                anime = cast(AnimeWidgetItem, table.item(row, 0)).anime
                 if (
                     text.lower() in anime.english_title.lower()
                     or text.lower() in anime.romaji_title.lower()

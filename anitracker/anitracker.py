@@ -5,7 +5,17 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import DefaultDict, Dict, Generator, Iterator, List, Optional, Tuple, Union
+from typing import (
+    Any,
+    DefaultDict,
+    Dict,
+    Generator,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 import anitopy
 
 import ffmpeg
@@ -22,7 +32,7 @@ class AniTracker:
         self._animes: Dict[int, AnimeCollection] = {}
 
         self._anilist = AniList()
-        self._episodes: Dict[Tuple[str, int, int], AnimeFile] = {}
+        self._episodes: Dict[Tuple[str, int], AnimeFile] = {}
         self._anilist.from_config(self._config)
 
     @property
@@ -99,7 +109,7 @@ class AniTracker:
         episode = self.get_episode(anime, episode_num)
 
         if episode is None:
-            return
+            return False
 
         # Load the subtitles for this file before proceeding
         episode.load_subtitles()
@@ -117,7 +127,7 @@ class AniTracker:
     def _play_episode(self, episode: AnimeFile, *, subtitle_id: int = 1) -> bool:
         if sys.platform.startswith("linux"):
             # Has mpv
-            if subprocess.run(["which", "mpv"], capture_output=1).returncode == 0:
+            if subprocess.run(["which", "mpv"], capture_output=True).returncode == 0:
                 return self._play_episode_mpv(episode, subtitle_id=subtitle_id)
             else:
                 self._play_episode_default_linux(episode)
@@ -132,7 +142,7 @@ class AniTracker:
         subprocess.run(cmd, capture_output=True)
 
     def _play_episode_default_windows(self, episode: AnimeFile):
-        os.startfile(episode.file)
+        os.startfile(episode.file)  # type: ignore
 
     def _play_episode_mpv(self, episode: AnimeFile, *, subtitle_id: int = 1) -> bool:
         filename = episode.file.replace("'", r"\'")
@@ -186,12 +196,15 @@ class AniTracker:
 
     def _increment_episode(self, episode: AnimeFile):
         coll = self.get_anime(episode.title)
+        if coll is None:
+            return
+
         # First skip this if it's not the next episode
         if coll.progress != episode.episode_number - 1:
             return
 
         # The update variables that will be sent
-        vars = {"progress": episode.episode_number}
+        vars: Dict[str, Any] = {"progress": episode.episode_number}
 
         # Include completion if this is the last episode
         if episode.episode_number == coll.episode_count:

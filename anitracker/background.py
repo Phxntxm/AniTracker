@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import os
-import shlex
-import subprocess
 import sys
 import tempfile
 import traceback
 from time import sleep
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 import requests
 from PySide6.QtCore import *
@@ -17,8 +15,7 @@ from PySide6.QtWidgets import *
 from anitracker.media import AnimeCollection
 
 if TYPE_CHECKING:
-    from anitracker import AniTracker
-    from anitracker.media import AnimeFile
+    from anitracker.__main__ import MainWindow
 
 __all__ = (
     "PlayEpisode",
@@ -34,7 +31,9 @@ __all__ = (
 
 
 class PlayEpisode(QThread):
-    def __init__(self, anime: AnimeCollection, episode_number: int, window) -> None:
+    def __init__(
+        self, anime: AnimeCollection, episode_number: int, window: MainWindow
+    ) -> None:
         super().__init__()
 
         self._anime = anime
@@ -53,7 +52,7 @@ class PlayEpisode(QThread):
 class UpdateAnimeEpisodes(QThread):
     reload_anime_eps = Signal()
 
-    def __init__(self, window) -> None:
+    def __init__(self, window: MainWindow) -> None:
         super().__init__()
 
         self._window = window
@@ -73,7 +72,7 @@ class UpdateAnimeEpisodes(QThread):
 class UpdateAnimeEpisodesLoop(QThread):
     reload_anime_eps = Signal()
 
-    def __init__(self, window) -> None:
+    def __init__(self, window: MainWindow) -> None:
         super().__init__()
 
         self._window = window
@@ -96,7 +95,7 @@ class ConnectToAnilist(QThread):
     update_label = Signal(str)
     first_run = True
 
-    def __init__(self, window) -> None:
+    def __init__(self, window: MainWindow) -> None:
         super().__init__()
 
         self._window = window
@@ -127,7 +126,7 @@ class UpdateAnimeLists(QThread):
     clear_table_signal = Signal()
     first_run = True
 
-    def __init__(self, window) -> None:
+    def __init__(self, window: MainWindow) -> None:
         super().__init__()
 
         self._window = window
@@ -156,9 +155,8 @@ class UpdateAnimeLists(QThread):
 class AnimeUpdateSuccess(QThread):
     toggle = Signal()
 
-    def __init__(self, window) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self._window = window
 
     @Slot()
     def run(self):
@@ -173,7 +171,7 @@ class AnimeUpdateSuccess(QThread):
 class StatusLabelUpdater(QThread):
     update = Signal()
 
-    def __init__(self, window) -> None:
+    def __init__(self, window: MainWindow) -> None:
         super().__init__()
         self._window = window
 
@@ -188,7 +186,7 @@ class StatusLabelUpdater(QThread):
 
 
 class UpdateChecker(QThread):
-    def __init__(self, window) -> None:
+    def __init__(self, window: MainWindow) -> None:
         super().__init__()
         self._window = window
 
