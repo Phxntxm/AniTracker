@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import date
 from enum import Enum, auto
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import ffmpeg
@@ -361,9 +360,9 @@ class AnimeFile:
         # (No space after the episode number)
 
         inst = cls()
-        inst.title = data.get("anime_title", "Unknown")
+        inst.title = data["anime_title"]
         inst.episode_title = data.get("episode_title", "Unknown")
-        inst.episode_number = int(data.get("episode_number", 0))
+        inst.episode_number = int(data["episode_number"])
         inst.file = data["file_name"]
         inst.subtitles = []
 
@@ -377,7 +376,7 @@ class AnimeFile:
         else:
             return data
 
-    def load_subtitles(self):
+    def load_subtitles(self, standalone_subs: Dict[Tuple[str, int], SubtitleTrack]):
         self.subtitles = []
 
         sub_id = 1
@@ -389,21 +388,40 @@ class AnimeFile:
                 self.subtitles.append(SubtitleTrack.from_data(stream))
                 sub_id += 1
 
+        # Now find all the matching standalone ones
+        for key, track in standalone_subs.items():
+            if key[0] == self.title and key[1] == self.episode_number:
+                self.subtitles.append(track)
+
 
 class SubtitleTrack:
     language: str
     title: str
     id: int
+    file: Optional[str]
 
     @classmethod
     def from_data(cls, data: Dict):
-
         inst = cls()
-        inst.language = data["tags"].get("language", "Unknown")
-        inst.title = data["tags"].get("title", "Unknown")
-        inst.id = data["tags"]["id"]
+        inst.language = data.get("tags", {}).get("language", "Unknown")
+        inst.title = data.get("tags", {}).get("title", "Unknown")
+        inst.id = data.get("tags", {}).get("id", 0)
+
+        if "file_name" in data:
+            inst.file = data["file_name"]
+        else:
+            inst.file = None
 
         return inst
+
+    @classmethod
+    def from_file(cls, file: str):
+        try:
+            data = ffmpeg.probe(file)["streams"][0]
+            data["file_name"] = file
+            return cls.from_data(data)
+        except ffmpeg.Error:
+            return None
 
     @property
     def is_songs_signs(self) -> bool:

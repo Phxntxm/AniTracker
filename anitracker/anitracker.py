@@ -1,3 +1,4 @@
+from anitracker.media.anime import SubtitleTrack
 import os
 import shlex
 import subprocess
@@ -7,10 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
-    DefaultDict,
     Dict,
     Generator,
-    Iterator,
     List,
     Optional,
     Tuple,
@@ -18,12 +17,62 @@ from typing import (
 )
 import anitopy
 
-import ffmpeg
 from rapidfuzz import fuzz
 
 from anitracker.config import Config
 from anitracker.media import AnimeCollection, AnimeFile, UserStatus
 from anitracker.sync import AniList
+
+video_file_extensions = [
+    "webm",
+    "mkv",
+    "flv",
+    "flv",
+    "vob",
+    "ogv",
+    "ogg",
+    "drc",
+    "gif",
+    "gifv",
+    "mng",
+    "avi",
+    "mts",
+    "m2ts",
+    "ts",
+    "mov",
+    "qt",
+    "wmv",
+    "yuv",
+    "rm",
+    "rmvb",
+    "viv",
+    "asf",
+    "amv",
+    "mp4",
+    "m4p",
+    "m4v",
+    "mpg",
+    "mp2",
+    "mpeg",
+    "mpe",
+    "mpv",
+    "mpg",
+    "mpeg",
+    "m2v",
+    "m4v",
+    "svi",
+    "3gp",
+    "3g2",
+    "mxf",
+    "roq",
+    "nsv",
+    "flv",
+    "f4v",
+    "f4p",
+    "f4a",
+    "f4b",
+]
+subtitle_file_extensions = ["ass", "cmml", "lrc", "sami", "ttml", "srt", "ssa", "usf"]
 
 
 class AniTracker:
@@ -33,6 +82,7 @@ class AniTracker:
 
         self._anilist = AniList()
         self._episodes: Dict[Tuple[str, int], AnimeFile] = {}
+        self._standalone_subtitles: Dict[Tuple[str, int], SubtitleTrack] = {}
         self._anilist.from_config(self._config)
 
     @property
@@ -108,29 +158,38 @@ class AniTracker:
             return False
 
         # Load the subtitles for this file before proceeding
-        episode.load_subtitles()
+        episode.load_subtitles(self._standalone_subtitles)
 
         for sub_track in episode.subtitles:
             if sub_track.language == self._config["subtitle"]:
                 if sub_track.is_songs_signs and self._config["skip_songs_signs"]:
                     continue
                 else:
-                    return self._play_episode(episode, subtitle_id=sub_track.id)
+                    return self._play_episode(episode, subtitle=sub_track)
+
+        # Next check if there ARE subtitles, if we couldn't find one that
+        # matches, but there is one... choose the first
+        if episode.subtitles:
+            return self._play_episode(episode, subtitle=episode.subtitles[0])
 
         # If we couldn't find a subtitle track, just start it
         return self._play_episode(episode)
 
-    def _play_episode(self, episode: AnimeFile, *, subtitle_id: int = 1) -> bool:
+    def _play_episode(
+        self, episode: AnimeFile, *, subtitle: Optional[SubtitleTrack] = None
+    ) -> bool:
         if sys.platform.startswith("linux"):
             # Has mpv
             if subprocess.run(["which", "mpv"], capture_output=True).returncode == 0:
-                return self._play_episode_mpv(episode, subtitle_id=subtitle_id)
+                return self._play_episode_mpv(episode, subtitle=subtitle)
             else:
                 self._play_episode_default_linux(episode)
                 return False
         elif sys.platform.startswith("win32"):
             self._play_episode_default_windows(episode)
             return False
+
+        return False
 
     def _play_episode_default_linux(self, episode: AnimeFile):
         fmt = f"xdg-open '{episode.file}'"
@@ -140,11 +199,24 @@ class AniTracker:
     def _play_episode_default_windows(self, episode: AnimeFile):
         os.startfile(episode.file)  # type: ignore
 
-    def _play_episode_mpv(self, episode: AnimeFile, *, subtitle_id: int = 1) -> bool:
+    def _play_episode_mpv(
+        self, episode: AnimeFile, *, subtitle: Optional[SubtitleTrack] = None
+    ) -> bool:
         filename = episode.file.replace("'", r"\'")
-        fmt = r"mpv --fs --sid={} --term-status-msg=':${{percent-pos}}:' '{}'".format(
-            subtitle_id, filename
-        )
+
+        if subtitle is not None:
+            if subtitle.file is not None:
+                fmt = r"mpv --fs --sub-file='{}' --term-status-msg=':${{percent-pos}}:' '{}'".format(
+                    subtitle.file, filename
+                )
+            else:
+                fmt = r"mpv --fs --sid={} --term-status-msg=':${{percent-pos}}:' '{}'".format(
+                    subtitle.id, filename
+                )
+        else:
+            fmt = r"mpv --fs --term-status-msg=':${{percent-pos}}:' '{}'".format(
+                filename
+            )
         cmd = self._escape_linux_command(fmt)
 
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -236,10 +308,25 @@ class AniTracker:
             if file.is_dir():
                 continue
 
-            # If we don't know the title or the episode number, then
-            # we don't care about this file
             data = anitopy.parse(file.name)
+            # If we couldn't parse it, continue
+            if data is None:
+                continue
+            # Skip if it doesn't match the format for anime
+            if not (data.get("anime_title") and data.get("episode_number")):
+                continue
+
+            # At this point it's probably a file we care about, whether that's a video or
+            # a subtitle track.. so throw the filename in there
             data["file_name"] = str(file)
 
-            if data.get("anime_title") and data.get("episode_number"):
+            # If it's a video file just yield it
+            if data["file_extension"].lower() in video_file_extensions:
                 yield AnimeFile.from_data(data)
+            # Otherwise if it's a subtitle track, store it
+            if data["file_extension"].lower() in subtitle_file_extensions:
+                sub = SubtitleTrack.from_file(data["file_name"])
+                if sub is not None:
+                    self._standalone_subtitles[
+                        (data["anime_title"], int(data["episode_number"]))
+                    ] = sub

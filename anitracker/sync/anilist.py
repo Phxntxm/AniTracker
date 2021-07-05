@@ -55,8 +55,6 @@ class AniList:
             try:
                 return r.json()
             except json.JSONDecodeError:
-                print(query)
-                print(variables)
                 raise
 
     def open_oauth(self):
