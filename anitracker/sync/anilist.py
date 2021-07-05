@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, List
 import urllib.parse
 import webbrowser
 
@@ -6,6 +6,7 @@ import requests
 import json
 
 from anitracker.gql import queries
+from anitracker.media import Anime
 
 BASE_URL = "https://anilist.co/api/v2"
 GQL_URL = "https://graphql.anilist.co"
@@ -85,3 +86,33 @@ class AniList:
 
     def store_access(self, access_token: str):
         self.__access_token = access_token
+
+    def _search_media(self, query: str) -> List[Dict[str, Any]]:
+        results: List[Dict[str, Any]] = []
+
+        ret = self.gql("search_media", variables={"search": query, "page": 1})
+        results.extend(ret["data"]["Page"]["media"])
+
+        while ret["data"]["Page"]["pageInfo"]["hasNextPage"]:
+            ret = self.gql(
+                "search_media",
+                variables={
+                    "search": query,
+                    "page": ret["data"]["Page"]["pageInfo"]["currentPage"] + 1,
+                },
+            )
+            results.extend(ret["data"]["Page"]["media"])
+
+        return results
+
+    def search_anime(self, query: str) -> List[Anime]:
+        animes: List[Anime] = []
+        results = self._search_media(query)
+
+        for result in results:
+            if result["format"] in ["MANGA", "NOVEL", "ONE_SHOT"]:
+                continue
+
+            animes.append(Anime.from_data(result))
+
+        return animes

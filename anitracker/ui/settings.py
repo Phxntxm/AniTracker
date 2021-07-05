@@ -3,21 +3,21 @@
 ################################################################################
 ## Form generated from reading UI file 'settings.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.1.1
+## Created by: Qt User Interface Compiler version 5.15.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import *  # type: ignore
-from PySide6.QtGui import *  # type: ignore
-from PySide6.QtWidgets import *  # type: ignore
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
 
 
 class Ui_Settings(object):
     def setupUi(self, Settings):
         if not Settings.objectName():
             Settings.setObjectName(u"Settings")
-        Settings.resize(411, 276)
+        Settings.resize(694, 183)
         Settings.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
 "color: rgb(212, 212, 212);")
         self.horizontalLayout = QHBoxLayout(Settings)
@@ -78,32 +78,30 @@ class Ui_Settings(object):
         self.SubtitleLanguageSettingsLabel.setSizePolicy(sizePolicy)
         self.IgnoreSongsSignsCheckbox = QCheckBox(self.GeneralSettingsTab)
         self.IgnoreSongsSignsCheckbox.setObjectName(u"IgnoreSongsSignsCheckbox")
-        self.IgnoreSongsSignsCheckbox.setGeometry(QRect(10, 70, 371, 21))
+        self.IgnoreSongsSignsCheckbox.setGeometry(QRect(10, 70, 223, 21))
         self.SubtitleLanguage = QComboBox(self.GeneralSettingsTab)
         self.SubtitleLanguage.setObjectName(u"SubtitleLanguage")
         self.SubtitleLanguage.setGeometry(QRect(140, 40, 131, 25))
-        self.SubtitleLanguage.setEditable(True)
-        self.SubtitleLanguage.setMaxVisibleItems(20)
         self.SettingsTabWidget.addTab(self.GeneralSettingsTab, "")
         self.AnilistSettingsTab = QWidget()
         self.AnilistSettingsTab.setObjectName(u"AnilistSettingsTab")
         self.AnilistInstructionsLabel = QLabel(self.AnilistSettingsTab)
         self.AnilistInstructionsLabel.setObjectName(u"AnilistInstructionsLabel")
-        self.AnilistInstructionsLabel.setGeometry(QRect(130, 0, 395, 69))
+        self.AnilistInstructionsLabel.setGeometry(QRect(254, 0, 401, 71))
         self.AnilistInstructionsLabel.setAlignment(Qt.AlignCenter)
         self.AnilistConnectedAccountLabel = QLabel(self.AnilistSettingsTab)
         self.AnilistConnectedAccountLabel.setObjectName(u"AnilistConnectedAccountLabel")
-        self.AnilistConnectedAccountLabel.setGeometry(QRect(10, 80, 147, 16))
+        self.AnilistConnectedAccountLabel.setGeometry(QRect(10, 70, 241, 16))
         self.AnilistConnectedAccountLabel.setAlignment(Qt.AlignCenter)
         self.AnilistConnect = QPushButton(self.AnilistSettingsTab)
         self.AnilistConnect.setObjectName(u"AnilistConnect")
-        self.AnilistConnect.setGeometry(QRect(0, 30, 114, 23))
+        self.AnilistConnect.setGeometry(QRect(10, 10, 131, 23))
         self.AnilistCodeConfirm = QPushButton(self.AnilistSettingsTab)
         self.AnilistCodeConfirm.setObjectName(u"AnilistCodeConfirm")
-        self.AnilistCodeConfirm.setGeometry(QRect(540, 30, 131, 23))
+        self.AnilistCodeConfirm.setGeometry(QRect(10, 40, 131, 23))
         self.AnilistCodeBox = QTextEdit(self.AnilistSettingsTab)
         self.AnilistCodeBox.setObjectName(u"AnilistCodeBox")
-        self.AnilistCodeBox.setGeometry(QRect(250, 80, 411, 130))
+        self.AnilistCodeBox.setGeometry(QRect(10, 90, 651, 31))
         sizePolicy1 = QSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
@@ -128,9 +126,8 @@ class Ui_Settings(object):
         self.AnimeFolderSettingsLabel.setText(QCoreApplication.translate("Settings", u"Anime Folder:", None))
         self.SubtitleLanguageSettingsLabel.setText(QCoreApplication.translate("Settings", u"Subtitle Language:", None))
         self.IgnoreSongsSignsCheckbox.setText(QCoreApplication.translate("Settings", u"Ignore Songs and Signs Subtitles", None))
-        self.SubtitleLanguage.setPlaceholderText(QCoreApplication.translate("Settings", u"Language", None))
         self.SettingsTabWidget.setTabText(self.SettingsTabWidget.indexOf(self.GeneralSettingsTab), QCoreApplication.translate("Settings", u"General", None))
-        self.AnilistInstructionsLabel.setText(QCoreApplication.translate("Settings", u"<html><head/><body><p>To connect a new account, click Connect to anilist to the left</p><p>Login, then copy the code provided, enter it in the text box below</p><p>Then hit Confirm Code to the right</p></body></html>", None))
+        self.AnilistInstructionsLabel.setText(QCoreApplication.translate("Settings", u"<html><head/><body><p>To connect a new account, click Connect to anilist</p><p>Login, then copy the code provided, enter it in the text box below</p><p>Then hit Confirm Code</p></body></html>", None))
         self.AnilistConnectedAccountLabel.setText(QCoreApplication.translate("Settings", u"Connected account: N/A", None))
         self.AnilistConnect.setText(QCoreApplication.translate("Settings", u"Connect to anilist", None))
         self.AnilistCodeConfirm.setText(QCoreApplication.translate("Settings", u"Confirm Code", None))

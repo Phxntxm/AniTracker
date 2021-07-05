@@ -11,12 +11,14 @@ import ffmpeg
 if TYPE_CHECKING:
     from anitracker.sync import AniList
 
-
-import anitopy
-
-from PySide6.QtWidgets import QProgressBar
-
-__all__ = ("UserStatus", "AnimeStatus", "AnimeCollection", "AnimeFile", "SubtitleTrack")
+__all__ = (
+    "UserStatus",
+    "Anime",
+    "AnimeStatus",
+    "AnimeCollection",
+    "AnimeFile",
+    "SubtitleTrack",
+)
 
 
 class UserStatus(Enum):
@@ -37,34 +39,26 @@ class AnimeStatus(Enum):
 
 
 @dataclass
-class AnimeCollection:
-    _list_id: int
+class Anime:
     id: int
-    user_status: UserStatus
-    score: float
-    progress: int
-    repeat: int
-    updated_at: Union[date, None]
     romaji_title: str
     english_title: str
     native_title: str
     preferred_title: str
     anime_status: AnimeStatus
     description: str
-    notes: str
     anime_start_date: Union[date, None]
     anime_end_date: Union[date, None]
-    user_start_date: Union[date, None]
-    user_end_date: Union[date, None]
     episode_count: int
     average_score: int
     season: str
     genres: List[str]
     tags: List[Tuple[str, int]]
     studio: str
+    cover_image: str
 
     def __repr__(self) -> str:
-        return f"<AnimeCollection(id={self.id} user_status={self.user_status} title={self.english_title})>"
+        return f"<Anime(id={self.id} title={self.english_title})>"
 
     __str__ = __repr__
 
@@ -75,18 +69,80 @@ class AnimeCollection:
         return isinstance(o, AnimeCollection) and self.id == o.id
 
     @property
-    def progress_bar(self) -> QProgressBar:
-        bar = QProgressBar()
-        bar.setMinimum(0)
-        bar.setMaximum(self.episode_count)
-        bar.setValue(self.progress)
-        bar.setFormat("%v/%m")
-
-        return bar
-
-    @property
     def titles(self) -> List[str]:
         return [self.english_title, self.romaji_title, self.native_title]
+
+    @classmethod
+    def from_data(cls, data: Dict) -> Anime:
+        start = (
+            date(**data["startDate"])
+            if all(value for value in data["startDate"].values())
+            else None
+        )
+        end = (
+            date(**data["endDate"])
+            if all(value for value in data["endDate"].values())
+            else None
+        )
+        studios = [
+            e["node"]["name"]
+            for e in data["studios"]["edges"]
+            if e["node"]["isAnimationStudio"]
+        ]
+        if studios:
+            studio = studios[0]
+        else:
+            # Just get the first studio if we can't find an animation studio
+            if data["studios"]["edges"]:
+                studio = data["studios"]["edges"][0]
+            else:
+                studio = ""
+
+        inst = cls(
+            data["id"],
+            data["title"]["romaji"] or "",
+            data["title"]["english"] or "",
+            data["title"]["native"] or "",
+            data["title"]["userPreferred"] or "",
+            AnimeStatus[data["status"]],
+            data["description"],
+            start,
+            end,
+            data["episodes"] or 0,
+            data["averageScore"],
+            f"{data['season']} {data['seasonYear']}",
+            data["genres"],
+            [
+                (tag["name"], tag["rank"])
+                for tag in data["tags"]
+                if not tag["isMediaSpoiler"]
+            ],
+            studio,
+            data["coverImage"]["large"],
+        )
+
+        return inst
+
+    def edit(self, sync: AniList, *, status: UserStatus):
+        sync.gql("update_entry", {"mediaId": self.id, "status": status.name})
+
+
+@dataclass
+class AnimeCollection(Anime):
+    _list_id: int
+    user_status: UserStatus
+    score: float
+    progress: int
+    repeat: int
+    updated_at: Union[date, None]
+    notes: str
+    user_start_date: Union[date, None]
+    user_end_date: Union[date, None]
+
+    def __repr__(self) -> str:
+        return f"<AnimeCollection(id={self.id} user_status={self.user_status} title={self.english_title})>"
+
+    __str__ = __repr__
 
     @classmethod
     def from_data(cls, data: Dict) -> AnimeCollection:
@@ -122,26 +178,17 @@ class AnimeCollection:
             if data["media"]["studios"]["edges"]:
                 studio = data["media"]["studios"]["edges"][0]
             else:
-                studio = None
+                studio = ""
         inst = cls(
-            data["id"],
             data["mediaId"],
-            UserStatus[data["status"]],
-            data["score"],
-            data["progress"],
-            data["repeat"],
-            date.fromtimestamp(data["updatedAt"]) if data["updatedAt"] else None,
             data["media"]["title"]["romaji"] or "",
             data["media"]["title"]["english"] or "",
             data["media"]["title"]["native"] or "",
             data["media"]["title"]["userPreferred"] or "",
             AnimeStatus[data["media"]["status"]],
             data["media"]["description"],
-            data["notes"],
             start,
             end,
-            user_start,
-            user_end,
             data["media"]["episodes"] or 0,
             data["media"]["averageScore"],
             f"{data['media']['season']} {data['media']['seasonYear']}",
@@ -152,6 +199,16 @@ class AnimeCollection:
                 if not tag["isMediaSpoiler"]
             ],
             studio,
+            data["media"]["coverImage"]["large"],
+            data["id"],
+            UserStatus[data["status"]],
+            data["score"],
+            data["progress"],
+            data["repeat"],
+            date.fromtimestamp(data["updatedAt"]) if data["updatedAt"] else None,
+            data["notes"],
+            user_start,
+            user_end,
         )
 
         return inst
@@ -189,7 +246,7 @@ class AnimeCollection:
             if data["media"]["studios"]["edges"]:
                 studio = data["media"]["studios"]["edges"][0]
             else:
-                studio = None
+                studio = ""
 
         self._list_id = data["id"]
         self.id = data["mediaId"]

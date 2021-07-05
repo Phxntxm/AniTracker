@@ -10,14 +10,14 @@ from datetime import date
 from enum import Enum
 from typing import Dict, List, Optional, Union, cast
 
-from PySide6.QtCore import *
-from PySide6.QtGui import *
-from PySide6.QtWidgets import *
+from PySide2.QtCore import *  # type: ignore
+from PySide2.QtGui import *  # type: ignore
+from PySide2.QtWidgets import *  # type: ignore
 
 from anitracker import __version__
 from anitracker.anitracker import AniTracker
 from anitracker.background import *
-from anitracker.media import AnimeCollection, AnimeFile, UserStatus
+from anitracker.media import AnimeCollection, Anime, UserStatus
 from anitracker.ui import Ui_About, Ui_AnimeApp, Ui_AnimeInfo, Ui_Settings
 
 
@@ -37,13 +37,13 @@ class MouseFilter(QObject):
         # If we've pressed and released
         if event.type() is QEvent.MouseButtonDblClick:
             # Get the item at that position
-            point = event.position().toPoint()
+            point = event.pos()
             item = cast(AnimeWidgetItem, self._table.itemAt(point))
             parent.open_anime_settings(item.anime)
 
         if event.type() is QEvent.MouseButtonRelease:
             # Get the item at that position
-            item = cast(AnimeWidgetItem, self._table.itemAt(event.position().toPoint()))
+            item = cast(AnimeWidgetItem, self._table.itemAt(event.pos()))
 
             # If we found one, then do the things
             if item is not None:
@@ -57,7 +57,7 @@ class MouseFilter(QObject):
 
 
 class HiddenProgressBarItem(QTableWidgetItem):
-    def __init__(self, anime: AnimeCollection) -> None:
+    def __init__(self, anime: Union[AnimeCollection, Anime]) -> None:
         super().__init__("")
         self.anime = anime
 
@@ -74,7 +74,7 @@ class HiddenProgressBarItem(QTableWidgetItem):
 
 
 class AnimeWidgetItem(QTableWidgetItem):
-    def __init__(self, anime: AnimeCollection):
+    def __init__(self, anime: Union[AnimeCollection, Anime]):
         super().__init__()
 
         self.anime = anime
@@ -86,6 +86,7 @@ class MainWindow(QMainWindow):
         super().__init__()
         self._qapp = qapp
         self.setup()
+        self.connect_signals()
 
     def setup(self):
         self.ui = Ui_AnimeApp()
@@ -110,7 +111,6 @@ class MainWindow(QMainWindow):
             "id": False,
             "user_status": False,
             "score": False,
-            "progress": False,
             "repeat": False,
             "updated_at": False,
             "romaji_title": False,
@@ -121,6 +121,8 @@ class MainWindow(QMainWindow):
             "description": False,
             "start_date": False,
             "end_date": False,
+            "anime_start_date": False,
+            "anime_end_date": False,
             "episode_count": True,
             "average_score": True,
         }
@@ -137,37 +139,30 @@ class MainWindow(QMainWindow):
             margin-left: 500px;
             """
         )
-        self.filter_anime.textChanged.connect(self.filter_row)  # type: ignore
         self.ui.toolBar.addWidget(self.filter_anime)
+        self.ui.AnimePages.setCurrentIndex(0)
+        self.ui.AnimeListChooser.setCurrentRow(0)
 
         # Setup background stuff
         self.threadpool = QThreadPool()
         # This will trigger the status label update
         self.status_update_worker = StatusLabelUpdater(self)
         self.status_update_worker.setTerminationEnabled(True)
-        self.status_update_worker.update.connect(self.update_status)  # type: ignore
         # Used for searching files in the background
         self.update_worker = UpdateAnimeEpisodes(self)
         self.update_worker.setTerminationEnabled(True)
-        self.update_worker.reload_anime_eps.connect(self.reload_anime_eps)  # type: ignore
         # This'll be the loop that automatically does so every 2 minutes
         self._update_anime_files_loop = UpdateAnimeEpisodesLoop(self)
         self._update_anime_files_loop.setTerminationEnabled(True)
-        self._update_anime_files_loop.reload_anime_eps.connect(self.reload_anime_eps)  # type: ignore
         # Connecting to anilist
         self.anilist_connector = ConnectToAnilist(self)
         self.anilist_connector.setTerminationEnabled(True)
-        self.anilist_connector.update_label.connect(  # type: ignore
-            self.settings_window.AnilistConnectedAccountLabel.setText
-        )
         # Anime updates
         self.anime_updater = UpdateAnimeLists(self)
         self.anime_updater.setTerminationEnabled(True)
-        self.anime_updater.handle_anime_updates.connect(self.handle_anime_updates)  # type: ignore
         # The success update label
         self.update_success = AnimeUpdateSuccess()
         self.update_success.setTerminationEnabled(True)
-        self.update_success.toggle.connect(self.toggle_success)  # type: ignore
         # Will check for update in the background
         self.update_checker = UpdateChecker(self)
         self.update_checker.setTerminationEnabled(True)
@@ -178,31 +173,11 @@ class MainWindow(QMainWindow):
         self.status_update_worker.start()
 
         # Setup the settings stuff
-        self.settings_window.AnilistConnect.clicked.connect(  # type: ignore
-            self.app._anilist.open_oauth
-        )
-        self.settings_window.AnilistCodeConfirm.clicked.connect(  # type: ignore
-            self.anilist_code_confirm
-        )
-        self.settings_window.AnimeFolderBrowse.clicked.connect(self.select_anime_path)  # type: ignore
-        self.settings_window.IgnoreSongsSignsCheckbox.stateChanged.connect(  # type: ignore
-            self.update_songs_signs
-        )
 
         self.settings_window.SubtitleLanguage.addItems(
             sorted([l.name for l in pycountry.languages])
         )
 
-        self.settings_window.SubtitleLanguage.currentIndexChanged.connect(  # type: ignore
-            self.change_language
-        )
-        self.ui.actionSettings.triggered.connect(self.open_settings)  # type: ignore
-        self.ui.actionRefresh.triggered.connect(self.anime_updater.start)  # type: ignore
-        self.ui.actionReload_Videos.triggered.connect(self.update_worker.start)  # type: ignore
-        self.ui.actionAbout.triggered.connect(self.open_about)  # type: ignore
-        self.ui.actionReport_bug.triggered.connect(self.open_issue_tracker)  # type: ignore
-        self.ui.actionSource_code.triggered.connect(self.open_repo)  # type: ignore
-        self.ui.actionUpdateCheck.triggered.connect(self.update_checker.start)  # type: ignore
         # Setup initial settings info
         try:
             self.settings_window.AnimeFolderLineEdit.setText(
@@ -224,52 +199,111 @@ class MainWindow(QMainWindow):
             pass
 
     def custom_ui(self):
-        pretty_headers = self.pretty_headers
-
-        for table in self.tables:
-            # Createa menu per table
-            menu = table.menu = QMenu(self.ui.AnimeListTab)  # type: ignore
+        def default_table_setup(_table: QTableWidget, skip_user_settings: bool = False):
+            # Create a menu per table
+            menu = _table.menu = QMenu(self.ui.AnimeListTab)  # type: ignore
             menu.setStyleSheet("QMenu::item:selected {background-color: #007fd4}")
             menu.triggered.connect(self.header_changed)  # type: ignore
             # Set the custom context menu on the *header*, this is how
             # we switch which columns are visible
-            table.horizontalHeader().setContextMenuPolicy(
+            _table.horizontalHeader().setContextMenuPolicy(
                 Qt.ContextMenuPolicy.CustomContextMenu
             )
-            # Connect it to the modifying of the table
-            table.horizontalHeader().customContextMenuRequested.connect(  # type: ignore
-                self.open_header_menu
+            # Connect it to the modifying of the _table
+            _table.horizontalHeader().customContextMenuRequested.connect(  # type: ignore
+                functools.partial(self.open_header_menu, _table)
             )
-            table.horizontalHeader().setMinimumSectionSize(50)
-            # Now set the custom context menu on the table itself
-            table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-            table.customContextMenuRequested.connect(self.open_anime_context_menu)  # type: ignore
-            table.viewport().installEventFilter(MouseFilter(table, self))
+            _table.horizontalHeader().setMinimumSectionSize(50)
+            # Now set the custom context menu on the _table itself
+            _table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            _table.customContextMenuRequested.connect(functools.partial(self.open_anime_context_menu, _table))  # type: ignore
+            _table.viewport().installEventFilter(MouseFilter(_table, self))
+            _table.itemClicked.connect(self.change_banner)  # type: ignore
 
-            # Insert the column for progress first
-            table.insertColumn(0)
-            table.setColumnWidth(0, 200)
+            headers = []
 
-            for index, enabled in enumerate(self.get_headers(table).values(), start=1):
+            if not skip_user_settings:
+                headers.append("Progress")
+
+            for title, enabled in self.get_headers(_table).items():
+                # Skip if this is a user setting
+                if skip_user_settings and title in [
+                    "user_status",
+                    "score",
+                    "progress",
+                    "repeat",
+                    "updated_at",
+                    "start_date",
+                    "end_date",
+                ]:
+                    continue
                 # Get the pretty title for the action menu
-                pretty_title = pretty_headers[index - 1]
+                pretty_title = title.lower().replace("_", " ").title()
+                headers.append(pretty_title)
                 # Create the action menu entry
-                action = QAction(pretty_title, table.horizontalHeader())
+                action = QAction(pretty_title, _table.horizontalHeader())
                 # Set them as checkable
                 action.setCheckable(True)
-                # Add column to table
-                table.insertColumn(index)
+                # Add column to _table
+                _table.insertColumn(_table.columnCount())
                 # If it's enabled, set action as true and don't hide row
                 if enabled:
                     action.setChecked(True)
-                    table.setColumnHidden(index, False)
+                    _table.setColumnHidden(_table.columnCount() - 1, False)
                 else:
-                    table.setColumnHidden(index, True)
+                    _table.setColumnHidden(_table.columnCount() - 1, True)
 
                 menu.addAction(action)
 
             # Setting headers has to come after
-            table.setHorizontalHeaderLabels(["Progress"] + pretty_headers)
+            _table.setHorizontalHeaderLabels(headers)
+
+        default_table_setup(self.ui.AnilistSearchResults, skip_user_settings=True)
+        # https://bugreports.qt.io/browse/QTBUG-12889
+        # Asanine
+        self.ui.AnilistSearchResults.horizontalHeader().setVisible(True)
+
+        for table in self.tables:
+            # Insert the column for progress first
+            table.insertColumn(0)
+            table.setColumnWidth(0, 200)
+
+            default_table_setup(table)
+
+    def connect_signals(self):
+        self.filter_anime.textChanged.connect(self.filter_row)  # type: ignore
+        self.status_update_worker.update.connect(self.update_status)  # type: ignore
+        self.update_worker.reload_anime_eps.connect(self.reload_anime_eps)  # type: ignore
+        self._update_anime_files_loop.reload_anime_eps.connect(self.reload_anime_eps)  # type: ignore
+        self.anilist_connector.update_label.connect(  # type: ignore
+            self.settings_window.AnilistConnectedAccountLabel.setText
+        )
+        self.anime_updater.handle_anime_updates.connect(self.handle_anime_updates)  # type: ignore
+        self.update_success.toggle.connect(self.toggle_success)  # type: ignore
+        self.settings_window.AnilistConnect.clicked.connect(  # type: ignore
+            self.app._anilist.open_oauth
+        )
+        self.settings_window.AnilistCodeConfirm.clicked.connect(  # type: ignore
+            self.anilist_code_confirm
+        )
+        self.settings_window.AnimeFolderBrowse.clicked.connect(self.select_anime_path)  # type: ignore
+        self.settings_window.IgnoreSongsSignsCheckbox.stateChanged.connect(  # type: ignore
+            self.update_songs_signs
+        )
+        self.settings_window.SubtitleLanguage.currentIndexChanged.connect(  # type: ignore
+            self.change_language
+        )
+
+        self.ui.AnilistSearchButton.clicked.connect(self.search_anime)  # type: ignore
+        self.ui.AnimeListChooser.currentRowChanged.connect(self.change_page)  # type: ignore
+        # Menu actions
+        self.ui.actionSettings.triggered.connect(self.open_settings)  # type: ignore
+        self.ui.actionRefresh.triggered.connect(self.anime_updater.start)  # type: ignore
+        self.ui.actionReload_Videos.triggered.connect(self.update_worker.start)  # type: ignore
+        self.ui.actionAbout.triggered.connect(self.open_about)  # type: ignore
+        self.ui.actionReport_bug.triggered.connect(self.open_issue_tracker)  # type: ignore
+        self.ui.actionSource_code.triggered.connect(self.open_repo)  # type: ignore
+        self.ui.actionUpdateCheck.triggered.connect(self.update_checker.start)  # type: ignore
 
     def stop_threads(self):
         for thread in [
@@ -342,72 +376,73 @@ class MainWindow(QMainWindow):
                 f"Connected account: {self.app._anilist.name}"
             )
 
-    def insert_row(self, table: QTableWidget, anime: AnimeCollection):
+    def insert_row(self, table: QTableWidget, anime: Union[AnimeCollection, Anime]):
         row_pos = table.rowCount()
-
         table.insertRow(row_pos)
 
-        # Add the progress bar at position 0
-        bar = QProgressBar()
-        bar.setMinimum(0)
-        bar.setMaximum(anime.episode_count)
-        bar.setMaximumHeight(15)
-        bar.setStyleSheet(
-            """
-            QProgressBar {
-                border: 2px solid grey;
-                border-radius: 5px;
-                background-color: rgb(68, 68, 68);
-                vertical-align: middle;
-            }
-            QProgressBar:horizontal {
-                text-align: right;
-                margin-right: 8ex;
-                padding: 1px;
-            }
-            QProgressBar::chunk {
-                background-color: #05B8CC;
-                width: 1px;
-            }
-            """
-        )
-        cell_widget = QWidget()
-        layout = QHBoxLayout()
-        layout.addWidget(bar)
-        layout.setAlignment(Qt.AlignCenter)
-        layout.setContentsMargins(0, 0, 0, 0)
-        cell_widget.setLayout(layout)
+        if isinstance(anime, AnimeCollection):
 
-        bar.setValue(anime.progress)
-        bar.setFormat("%v/%m")
-        # Don't show progress bar if there are no episodes
-        if anime.episode_count == 0:
-            bar.setVisible(False)
+            # Add the progress bar at position 0
+            bar = QProgressBar()
+            bar.setMinimum(0)
+            bar.setMaximum(anime.episode_count)
+            bar.setMaximumHeight(15)
+            bar.setStyleSheet(
+                """
+                QProgressBar {
+                    border: 2px solid grey;
+                    border-radius: 5px;
+                    background-color: rgb(68, 68, 68);
+                    vertical-align: middle;
+                }
+                QProgressBar:horizontal {
+                    text-align: right;
+                    margin-right: 8ex;
+                    padding: 1px;
+                }
+                QProgressBar::chunk {
+                    background-color: #05B8CC;
+                    width: 1px;
+                }
+                """
+            )
+            cell_widget = QWidget()
+            layout = QHBoxLayout()
+            layout.addWidget(bar)
+            layout.setAlignment(Qt.AlignCenter)
+            layout.setContentsMargins(0, 0, 0, 0)
+            cell_widget.setLayout(layout)
 
-        if missing := self.app.missing_eps(anime):
-            tt = f"Missing episodes: {missing}"
-        else:
-            tt = "Found all episodes"
+            bar.setValue(anime.progress)
+            bar.setFormat("%v/%m")
+            # Don't show progress bar if there are no episodes
+            if anime.episode_count == 0:
+                bar.setVisible(False)
 
-        bar.setToolTip(tt)
-        table.setCellWidget(row_pos, 0, cell_widget)
-        # Add an item along with the progressbar to enable sorting
-        item = HiddenProgressBarItem(anime)
-        table.setItem(row_pos, 0, item)
+            if missing := self.app.missing_eps(anime):
+                tt = f"Missing episodes: {missing}"
+            else:
+                tt = "Found all episodes"
 
-        for index, attr in enumerate(self._header_labels, start=1):
-            piece = getattr(anime, attr, "")
+            bar.setToolTip(tt)
+            table.setCellWidget(row_pos, 0, cell_widget)
+            # Add an item along with the progressbar to enable sorting
+            item = HiddenProgressBarItem(anime)
+            table.setItem(row_pos, 0, item)
+
+        for index in range(table.columnCount()):
+            header = table.horizontalHeaderItem(index).text().lower().replace(" ", "_")
+
+            piece = getattr(anime, header, "")
             if isinstance(piece, Enum):
                 piece = piece.name.title()
-            elif isinstance(piece, date):
+            else:
                 piece = str(piece)
 
+            # Create our custom anime widget item
             item = AnimeWidgetItem(anime)
-            # item.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-            # item.customContextMenuRequested.connect(self.open_anime_context_menu)
             item.setData(Qt.DisplayRole, piece)
-            # Attach the anime object to it so we can use it later
-            item.setToolTip(tt)
+            item.setToolTip(piece)
             table.setItem(row_pos, index, item)
 
         # Make sure things are sorted properly
@@ -445,9 +480,7 @@ class MainWindow(QMainWindow):
             table.item(row, index).setData(Qt.DisplayRole, piece)
             table.item(row, index).setToolTip(tt)
 
-    def open_anime_settings(
-        self, anime: AnimeCollection
-    ):  # Get the item at that position
+    def open_anime_settings(self, anime: Union[Anime, AnimeCollection]):
         # Pull up anime info
         s = self.anime_window
         m = self.anime_menu
@@ -461,20 +494,27 @@ class MainWindow(QMainWindow):
         s.AnimeSeasonLabel.setText(anime.season)
         s.AnimeAverageScoreLabel.setText(f"{anime.average_score}%")
         s.AnimeEpisodesLabel.setText(str(anime.episode_count))
-        s.AnimeNotes.setText(anime.notes)
-        s.AnimeUserScore.setValue(anime.score)
-        s.AnimeUpdateButton.clicked.connect(  # type: ignore
-            functools.partial(self.update_anime_from_settings, anime)
-        )
-        m.show()
+        if isinstance(anime, AnimeCollection):
+            s.AnimeNotes.setText(anime.notes)
+            s.AnimeUserScore.setValue(anime.score)
+            s.AnimeUpdateButton.clicked.connect(  # type: ignore
+                functools.partial(self.update_anime_from_settings, anime)
+            )
+        else:
+            s.AnimeNotesLabel.setVisible(False)
+            s.AnimeUserScoreLabel.setVisible(False)
+            s.AnimeUserScore.setVisible(False)
+            s.AnimeNotes.setVisible(False)
+            s.AnimeUpdateButton.setVisible(False)
         m.setFixedSize(m.size())
+        m.show()
 
     ### Signals
 
     # Settings action was clicked
     def open_settings(self):
-        self.settings_widget.show()
         self.settings_widget.setFixedSize(self.settings_widget.size())
+        self.settings_widget.show()
 
     # Confirm anilist code
     def anilist_code_confirm(self):
@@ -488,6 +528,7 @@ class MainWindow(QMainWindow):
         self.update_anilist_acc_label()
 
     # Header context menu option selected
+    # TODO: Fix!
     def header_changed(self, _action: QAction):
         # Get the index of this header, it will match up with the table
         index = self.pretty_headers.index(_action.text())
@@ -502,16 +543,16 @@ class MainWindow(QMainWindow):
         )
 
     # Header was right clicked
-    def open_header_menu(self, point: QPoint):
-        self.current_table.menu.exec(self.ui.AnimeListTab.mapToGlobal(point))  # type: ignore
+    def open_header_menu(self, table: QTableWidget, point: QPoint):
+        table.menu.exec_(self.ui.AnimeListTab.mapToGlobal(point))  # type: ignore
 
     # Anime in table was right clicked
-    def open_anime_context_menu(self, point: QPoint):
+    def open_anime_context_menu(self, table: QTableWidget, _: QPoint):
         # Get attrs that will be used a bit
-        anime: AnimeCollection = self.current_table.selectedItems()[0].anime  # type: ignore
+        anime: Union[AnimeCollection, Anime] = table.selectedItems()[0].anime  # type: ignore
 
         # Setup the menu settings
-        menu = QMenu(self.current_table)
+        menu = QMenu(table)
         menu.setStyleSheet(
             "QMenu::item:selected {background-color: #007fd4}"
             "QWidget:disabled {color: #000000}"
@@ -529,44 +570,49 @@ class MainWindow(QMainWindow):
         complete = menu.addAction("Completed")
         watch = menu.addAction("Watching")
         drop = menu.addAction("Dropped")
-        remove = menu.addAction("Remove from list")
+
+        if isinstance(anime, AnimeCollection):
+            remove = menu.addAction("Remove from list")
 
         menu.addSeparator()
 
-        # Add episode options
-        open_folder = menu.addAction("Open anime folder")
-        open_folder.setToolTip(
-            "This will open the folder that the first episode is detected in\n"
-            "If episodes are in different folders then this may seem strange.\n"
-            "If no episodes are found for this, it will open the anime folder.\n"
-        )
-        play_next = menu.addAction("Play next episode")
-        play_menu = menu.addMenu("Play episode...")
-        play_opts = {}
-        next_ep = anime.progress + 1
-
-        # Followup setting changes
-        if not self.app.get_episode(anime, next_ep):
-            play_next.setEnabled(False)
-
-        if eps := self.app.get_episodes(anime):
-            folder = os.path.dirname(
-                sorted(eps, key=lambda k: k.episode_number)[0].file
+        if isinstance(anime, AnimeCollection):
+            # Add episode options
+            open_folder = menu.addAction("Open anime folder")
+            open_folder.setToolTip(
+                "This will open the folder that the first episode is detected in\n"
+                "If episodes are in different folders then this may seem strange.\n"
+                "If no episodes are found for this, it will open the anime folder.\n"
             )
-        elif self.app._config["animedir"] is not None:
-            folder = self.app._config["animedir"]
-        else:
-            folder = None
-            open_folder.setEnabled(False)
+            play_next = menu.addAction("Play next episode")
+            play_menu = menu.addMenu("Play episode...")
+            play_opts = {}
+            next_ep = anime.progress + 1
 
-        for ep in sorted(self.app.get_episodes(anime), key=lambda k: k.episode_number):
-            act = play_menu.addAction(f"Episode {ep.episode_number}")
-            play_opts[act] = ep.episode_number
+            # Followup setting changes
+            if not self.app.get_episode(anime, next_ep):
+                play_next.setEnabled(False)
 
-        if not play_opts:
-            play_menu.setEnabled(False)
+            if eps := self.app.get_episodes(anime):
+                folder = os.path.dirname(
+                    sorted(eps, key=lambda k: k.episode_number)[0].file
+                )
+            elif self.app._config["animedir"] is not None:
+                folder = self.app._config["animedir"]
+            else:
+                folder = None
+                open_folder.setEnabled(False)
 
-        action = menu.exec(QCursor.pos())
+            for ep in sorted(
+                self.app.get_episodes(anime), key=lambda k: k.episode_number
+            ):
+                act = play_menu.addAction(f"Episode {ep.episode_number}")
+                play_opts[act] = ep.episode_number
+
+            if not play_opts:
+                play_menu.setEnabled(False)
+
+        action = menu.exec_(QCursor.pos())
 
         if action == settings:
             self.open_anime_settings(anime)
@@ -575,28 +621,39 @@ class MainWindow(QMainWindow):
         elif action == complete:
             anime.edit(self.app._anilist, status=UserStatus.COMPLETED)
         elif action == watch:
-            if anime.user_status == UserStatus.COMPLETED:
+            if (
+                isinstance(anime, AnimeCollection)
+                and anime.user_status == UserStatus.COMPLETED
+            ):
                 anime.edit(self.app._anilist, status=UserStatus.REPEATING)
             else:
                 anime.edit(self.app._anilist, status=UserStatus.CURRENT)
         elif action == drop:
             anime.edit(self.app._anilist, status=UserStatus.DROPPED)
-        elif action == remove:
-            anime.delete(self.app._anilist)
-            del self.app._animes[anime.id]
-        elif action == open_folder and folder is not None:
-            if sys.platform.startswith("win32"):
-                subprocess.Popen(["start", folder], shell=True)
-            elif sys.platform.startswith("linux"):
-                subprocess.Popen(
-                    ["xdg-open", folder],
-                )
-        elif action == play_next:
-            self._playing_episode = PlayEpisode(anime, next_ep, self)
-            self._playing_episode.start()
-        elif action in play_opts:
-            self._playing_episode = PlayEpisode(anime, play_opts[action], self)
-            self._playing_episode.start()
+
+        # Anime Collection specific items
+        if isinstance(anime, AnimeCollection):
+            if action == remove:
+                anime.delete(self.app._anilist)
+                del self.app._animes[anime.id]
+            elif action == open_folder and folder is not None:
+                if sys.platform.startswith("win32"):
+                    subprocess.Popen(["start", folder], shell=True)
+                elif sys.platform.startswith("linux"):
+                    subprocess.Popen(
+                        ["xdg-open", folder],
+                    )
+            elif action == play_next:
+                self._playing_episode = PlayEpisode(anime, next_ep, self)
+                self._playing_episode.start()
+            elif action in play_opts:
+                self._playing_episode = PlayEpisode(anime, play_opts[action], self)
+                self._playing_episode.start()
+
+        # If we've edited an Anime class directly, that means we modifed our list from
+        # a non list-item... IE added it to it. So we need to refresh from anilist
+        if not isinstance(anime, AnimeCollection):
+            self.anime_updater.start()
 
         self.handle_anime_updates(list(self.app.animes.values()))
 
@@ -685,8 +742,8 @@ class MainWindow(QMainWindow):
         about.setupUi(widget)
         about.VersionLabel.setText(f"Version: {__version__}")
         about.label.linkActivated.connect(webbrowser.open)  # type: ignore
-        widget.show()
         widget.setFixedSize(widget.size())
+        widget.show()
 
     # Report bug was clicked
     def open_issue_tracker(self):
@@ -727,6 +784,21 @@ class MainWindow(QMainWindow):
 
         self.app._config["subtitle"] = alpha_3
 
+    # Page was updated
+    def change_page(self, row: int):
+        self.ui.AnimePages.setCurrentIndex(row)
+
+    # Change banner
+    def change_banner(self, item: AnimeWidgetItem):
+        self.ui.BannerViewer.setUrl(item.anime.cover_image)
+
+    # Search anilist
+    def search_anime(self):
+        results = self.app._anilist.search_anime(self.ui.AnilistSearchLineEdit.text())
+
+        for result in results:
+            self.insert_row(self.ui.AnilistSearchResults, result)
+
 
 def main():
     app = QApplication(sys.argv)
@@ -754,7 +826,7 @@ def main():
         # No backup file, no download happened, we don't care
         except FileNotFoundError:
             pass
-    ret = app.exec()
+    ret = app.exec_()
     window.stop_threads()
     sys.exit(ret)
 

@@ -8,9 +8,9 @@ from time import sleep
 from typing import TYPE_CHECKING, Optional
 
 import requests
-from PySide6.QtCore import *
-from PySide6.QtGui import *
-from PySide6.QtWidgets import *
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
 
 from anitracker.media import AnimeCollection
 

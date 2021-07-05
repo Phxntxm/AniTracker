@@ -3,14 +3,17 @@
 ################################################################################
 ## Form generated from reading UI file 'app.ui'
 ##
-## Created by: Qt User Interface Compiler version 6.1.1
+## Created by: Qt User Interface Compiler version 5.15.2
 ##
 ## WARNING! All changes made in this file will be lost when recompiling UI file!
 ################################################################################
 
-from PySide6.QtCore import *  # type: ignore
-from PySide6.QtGui import *  # type: ignore
-from PySide6.QtWidgets import *  # type: ignore
+from PySide2.QtCore import *
+from PySide2.QtGui import *
+from PySide2.QtWidgets import *
+
+from PySide2.QtWebEngineWidgets import QWebEngineView
+
 
 from anitracker import resources_rc
 
@@ -18,7 +21,7 @@ class Ui_AnimeApp(object):
     def setupUi(self, AnimeApp):
         if not AnimeApp.objectName():
             AnimeApp.setObjectName(u"AnimeApp")
-        AnimeApp.resize(800, 596)
+        AnimeApp.resize(1049, 596)
         AnimeApp.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
 "color: rgb(212, 212, 212);")
         self.actionSettings = QAction(AnimeApp)
@@ -46,10 +49,16 @@ class Ui_AnimeApp(object):
         self.MainWidget.setStyleSheet(u"background-color: rgb(55, 55, 61);\n"
 "alternate-background-color: rgb(84, 84, 93);\n"
 "color: rgb(212, 212, 212);")
-        self.gridLayout = QGridLayout(self.MainWidget)
-        self.gridLayout.setObjectName(u"gridLayout")
-        self.AnimeListTab = QTabWidget(self.MainWidget)
+        self.AnimePages = QStackedWidget(self.MainWidget)
+        self.AnimePages.setObjectName(u"AnimePages")
+        self.AnimePages.setGeometry(QRect(250, 0, 811, 501))
+        self.AnimePages.setFrameShape(QFrame.NoFrame)
+        self.AnimePages.setFrameShadow(QFrame.Plain)
+        self.MyListPage = QWidget()
+        self.MyListPage.setObjectName(u"MyListPage")
+        self.AnimeListTab = QTabWidget(self.MyListPage)
         self.AnimeListTab.setObjectName(u"AnimeListTab")
+        self.AnimeListTab.setGeometry(QRect(0, 10, 791, 491))
         self.AnimeListTab.setStyleSheet(u"QHeaderView::section{\n"
 "	background-color: rgb(68, 68, 68);\n"
 "}\n"
@@ -204,20 +213,91 @@ class Ui_AnimeApp(object):
         self.gridLayout_6.addWidget(self.DroppedTable, 0, 0, 1, 1)
 
         self.AnimeListTab.addTab(self.DroppedTab, "")
-
-        self.gridLayout.addWidget(self.AnimeListTab, 0, 0, 1, 1)
-
+        self.AnimePages.addWidget(self.MyListPage)
+        self.AnimeSearchPage = QWidget()
+        self.AnimeSearchPage.setObjectName(u"AnimeSearchPage")
+        self.AnimeSearchPage.setStyleSheet(u"")
+        self.tabWidget = QTabWidget(self.AnimeSearchPage)
+        self.tabWidget.setObjectName(u"tabWidget")
+        self.tabWidget.setGeometry(QRect(0, 10, 791, 491))
+        self.tabWidget.setStyleSheet(u"QHeaderView::section{\n"
+"	background-color: rgb(68, 68, 68);\n"
+"}\n"
+"QTabWidget::pane {\n"
+"	border: 2px solid #C2C7CB;\n"
+"}\n"
+"QTabWidget::tab-bar {\n"
+"	left: 5px;\n"
+"}\n"
+"QTabBar::tab {\n"
+"	background: rgb(68, 68, 68);\n"
+"    border: 2px solid #C4C4C3;\n"
+"    border-bottom-color: #C2C7CB;\n"
+"    border-top-left-radius: 4px;\n"
+"    border-top-right-radius: 4px;\n"
+"    min-width: 8ex;\n"
+"    padding: 2px;\n"
+"}\n"
+"QTabBar::tab:selected, QTabBar::tab:hover {\n"
+"	background: rgb(95, 95, 95);\n"
+"}\n"
+"QTabBar::tab:selected {\n"
+"	border-color: #9B9B9B;\n"
+"	border-bottom-color: #C2C7CB;\n"
+"}\n"
+"QTabBar::tab:!selected {\n"
+"	margin-top: 2px;\n"
+"}")
+        self.AnilistSearchTab = QWidget()
+        self.AnilistSearchTab.setObjectName(u"AnilistSearchTab")
+        self.AnilistSearchResults = QTableWidget(self.AnilistSearchTab)
+        self.AnilistSearchResults.setObjectName(u"AnilistSearchResults")
+        self.AnilistSearchResults.setGeometry(QRect(10, 50, 771, 401))
+        self.AnilistSearchResults.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
+"alternate-background-color: rgb(95, 95, 95);\n"
+"color: rgb(212, 212, 212);")
+        self.AnilistSearchResults.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.AnilistSearchResults.setAlternatingRowColors(True)
+        self.AnilistSearchResults.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.AnilistSearchResults.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.AnilistSearchResults.setSortingEnabled(True)
+        self.AnilistSearchResults.setWordWrap(False)
+        self.AnilistSearchResults.setCornerButtonEnabled(False)
+        self.AnilistSearchResults.setRowCount(0)
+        self.AnilistSearchResults.setColumnCount(0)
+        self.AnilistSearchResults.horizontalHeader().setVisible(False)
+        self.AnilistSearchResults.horizontalHeader().setHighlightSections(False)
+        self.AnilistSearchResults.verticalHeader().setVisible(False)
+        self.AnilistSearchResults.verticalHeader().setHighlightSections(False)
+        self.AnilistSearchLineEdit = QLineEdit(self.AnilistSearchTab)
+        self.AnilistSearchLineEdit.setObjectName(u"AnilistSearchLineEdit")
+        self.AnilistSearchLineEdit.setGeometry(QRect(10, 10, 221, 31))
+        self.AnilistSearchButton = QPushButton(self.AnilistSearchTab)
+        self.AnilistSearchButton.setObjectName(u"AnilistSearchButton")
+        self.AnilistSearchButton.setGeometry(QRect(240, 10, 91, 31))
+        self.tabWidget.addTab(self.AnilistSearchTab, "")
+        self.AnimePages.addWidget(self.AnimeSearchPage)
+        self.AnimeListChooser = QListWidget(self.MainWidget)
+        QListWidgetItem(self.AnimeListChooser)
+        QListWidgetItem(self.AnimeListChooser)
+        self.AnimeListChooser.setObjectName(u"AnimeListChooser")
+        self.AnimeListChooser.setGeometry(QRect(10, 10, 231, 161))
+        self.AnimeListChooser.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.AnimeListChooser.setProperty("showDropIndicator", True)
+        self.AnimeListChooser.setAlternatingRowColors(True)
         self.StatusLabel = QLabel(self.MainWidget)
         self.StatusLabel.setObjectName(u"StatusLabel")
+        self.StatusLabel.setGeometry(QRect(610, 10, 431, 21))
         self.StatusLabel.setStyleSheet(u"color: rgb(36, 255, 36);")
         self.StatusLabel.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
-
-        self.gridLayout.addWidget(self.StatusLabel, 1, 0, 1, 1)
-
+        self.BannerViewer = QWebEngineView(self.MainWidget)
+        self.BannerViewer.setObjectName(u"BannerViewer")
+        self.BannerViewer.setGeometry(QRect(10, 180, 230, 322))
+        self.BannerViewer.setUrl(QUrl(u"https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx21827-10F6m50H4GJK.png"))
         AnimeApp.setCentralWidget(self.MainWidget)
         self.menubar = QMenuBar(AnimeApp)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 800, 20))
+        self.menubar.setGeometry(QRect(0, 0, 1049, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuFile.setStyleSheet(u"QMenu::item:selected {background-color: #007fd4} QWidget:disabled {color: #000000} QMenu {border: 1px solid black}")
@@ -246,8 +326,11 @@ class Ui_AnimeApp(object):
         self.toolBar.addAction(self.actionReload_Videos)
 
         self.retranslateUi(AnimeApp)
+        self.AnilistSearchLineEdit.returnPressed.connect(self.AnilistSearchButton.click)
 
+        self.AnimePages.setCurrentIndex(0)
         self.AnimeListTab.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(AnimeApp)
@@ -279,6 +362,18 @@ class Ui_AnimeApp(object):
         self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.PlanningTab), QCoreApplication.translate("AnimeApp", u"Planning", None))
         self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.PausedTab), QCoreApplication.translate("AnimeApp", u"Paused", None))
         self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.DroppedTab), QCoreApplication.translate("AnimeApp", u"Dropped", None))
+        self.AnilistSearchLineEdit.setPlaceholderText(QCoreApplication.translate("AnimeApp", u"Search Anime", None))
+        self.AnilistSearchButton.setText(QCoreApplication.translate("AnimeApp", u"Search", None))
+        self.tabWidget.setTabText(self.tabWidget.indexOf(self.AnilistSearchTab), QCoreApplication.translate("AnimeApp", u"Anilist", None))
+
+        __sortingEnabled = self.AnimeListChooser.isSortingEnabled()
+        self.AnimeListChooser.setSortingEnabled(False)
+        ___qlistwidgetitem = self.AnimeListChooser.item(0)
+        ___qlistwidgetitem.setText(QCoreApplication.translate("AnimeApp", u"My List", None));
+        ___qlistwidgetitem1 = self.AnimeListChooser.item(1)
+        ___qlistwidgetitem1.setText(QCoreApplication.translate("AnimeApp", u"Anime Search", None));
+        self.AnimeListChooser.setSortingEnabled(__sortingEnabled)
+
         self.StatusLabel.setText(QCoreApplication.translate("AnimeApp", u"TextLabel", None))
         self.menuFile.setTitle(QCoreApplication.translate("AnimeApp", u"File", None))
         self.menuHelp.setTitle(QCoreApplication.translate("AnimeApp", u"Help", None))

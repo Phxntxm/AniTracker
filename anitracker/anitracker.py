@@ -81,10 +81,6 @@ class AniTracker:
 
                     self._animes[anime.id] = anime
 
-        # for testing
-        anime = self.animes[112609]
-        anime.edit(self._anilist, notes="Test update")
-
     def get_episodes(self, anime: AnimeCollection) -> List[AnimeFile]:
         l = []
 

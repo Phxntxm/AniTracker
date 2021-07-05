@@ -14,10 +14,13 @@ query ($userName: String) {
         startedAt {year month day}
         completedAt {year month day}
         media {
-          idMal
+          id
           season
           seasonYear
           genres
+          coverImage {
+            large
+          }
           tags {
             name
             rank
@@ -54,6 +57,7 @@ query ($userName: String) {
 update_entry = """
 mutation (
   $id: Int,
+  $mediaId: Int,
   $status: MediaListStatus,
   $score: Float,
   $progress: Int,
@@ -65,6 +69,7 @@ mutation (
 {
   SaveMediaListEntry (
       id: $id,
+      mediaId: $mediaId,
       status: $status,
       score: $score,
       progress: $progress,
@@ -94,7 +99,9 @@ mutation (
     DeleteMediaListEntry (
         id: $id
     )
-    {id}
+    {
+      deleted
+    }
 }
 """
 
@@ -103,6 +110,52 @@ viewer = """
   Viewer {
     id
     name
+  }
+}
+"""
+
+search_media = """
+query($page:Int,$search:String) {
+  Page(page:$page, perPage:50) {
+    pageInfo {
+      currentPage
+      hasNextPage
+    }
+    media(search:$search) {
+      id
+      season
+      seasonYear
+      coverImage {
+        large
+      }
+      genres
+      tags {
+        name
+        rank
+        isMediaSpoiler
+      }
+      studios {
+        edges {
+          node {
+            name
+            isAnimationStudio
+          }
+        }
+      }
+      title {
+        romaji
+        english
+        native
+        userPreferred
+      }
+      format
+      status
+      description
+      startDate {year month day}
+      endDate {year month day}
+      episodes
+      averageScore
+    }
   }
 }
 """
