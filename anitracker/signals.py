@@ -164,6 +164,13 @@ class SignalConnector:
         self.window.app._config["access-token"] = token
         self.window.app._anilist.verify()
 
+        # Update label
+        if self.window.app._anilist.authenticated:
+            self.settings_window.AnilistConnectedAccountLabel.setText(
+                f"Connected account: {self.window.app._anilist.name}"
+            )
+
+
     # Header context menu option selected
     def header_changed(self, table: QTableWidget, _action: QAction):
         # Loop through each column
