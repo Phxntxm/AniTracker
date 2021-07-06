@@ -82,7 +82,7 @@ class AniTracker:
 
         self._anilist = AniList()
         self._episodes: Dict[Tuple[str, int], AnimeFile] = {}
-        self._standalone_subtitles: Dict[Tuple[str, int], SubtitleTrack] = {}
+        self._standalone_subtitles: Dict[Tuple[str, int], str] = {}
         self._anilist.from_config(self._config)
 
     @property
@@ -308,25 +308,28 @@ class AniTracker:
             if file.is_dir():
                 continue
 
-            data = anitopy.parse(file.name)
-            # If we couldn't parse it, continue
-            if data is None:
+            try:
+                data = anitopy.parse(file.name)
+            except ValueError:
+                print("Failed to parse", file.name)
                 continue
-            # Skip if it doesn't match the format for anime
-            if not (data.get("anime_title") and data.get("episode_number")):
-                continue
+            else:
+                # If we couldn't parse it, continue
+                if data is None:
+                    continue
+                # Skip if it doesn't match the format for anime
+                if not (data.get("anime_title") and data.get("episode_number")):
+                    continue
 
-            # At this point it's probably a file we care about, whether that's a video or
-            # a subtitle track.. so throw the filename in there
-            data["file_name"] = str(file)
+                # At this point it's probably a file we care about, whether that's a video or
+                # a subtitle track.. so throw the filename in there
+                data["file_name"] = str(file)
 
-            # If it's a video file just yield it
-            if data.get("file_extension", "").lower() in video_file_extensions:
-                yield AnimeFile.from_data(data)
-            # Otherwise if it's a subtitle track, store it
-            if data.get("file_extension", "").lower() in subtitle_file_extensions:
-                sub = SubtitleTrack.from_file(data["file_name"])
-                if sub is not None:
+                # If it's a video file just yield it
+                if data.get("file_extension", "").lower() in video_file_extensions:
+                    yield AnimeFile.from_data(data)
+                # Otherwise if it's a subtitle track, store it
+                if data.get("file_extension", "").lower() in subtitle_file_extensions:
                     self._standalone_subtitles[
                         (data["anime_title"], int(data["episode_number"]))
-                    ] = sub
+                    ] = str(file)

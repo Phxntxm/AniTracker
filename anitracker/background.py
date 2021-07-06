@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import functools
 import os
 import sys
 import tempfile
 import traceback
 from time import sleep
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union, List
 
 import requests
 from PySide2.QtCore import *  # type: ignore
@@ -117,6 +118,7 @@ class ConnectToAnilist(QThread):
                 if self.first_run:
                     self.first_run = False
                     self._window.anime_updater.start()
+                    self._window._update_anime_files_loop.start()
             self._window.statuses.remove(status)
         except:
             traceback.print_exc()
@@ -141,8 +143,6 @@ class UpdateAnimeLists(QThread):
                 self._window.statuses.append(status)
                 # First refresh from anilist
                 self._window.app.refresh_from_anilist()
-                # Now send all the animes
-                self.handle_anime_updates.emit(list(self._window.app.animes.values()))
 
                 if self.first_run:
                     self.first_run = False
@@ -293,6 +293,56 @@ class EditAnime(QThread):
             self._window.statuses.remove(status)
         except:
             traceback.print_exc()
+
+
+class UpdateTablesForAnimes(QThread):
+    def __init__(self, window: MainWindow, animes: List[AnimeCollection]):
+        self._window = window
+        self._animes = animes
+
+    @Slot()
+    def run(self):
+        # First, handle any animes in the tables but not in the list of animes
+        for table in self._window.tables:
+            # Reverse through the range, so that removal of rows
+            # doesn't mess up what we're looking at
+            for row in range(table.rowCount() - 1, -1, -1):
+                anime: AnimeCollection = table.item(row, 0).anime  # type: ignore
+
+                # If the anime is not in the list, remove it from the table
+                if anime not in self._animes:
+                    self._window.update_ui_signal.emit(
+                        functools.partial(table.removeRow, row)
+                    )
+                # Otherwise if this table doesn't match the anime's status, remove it
+                elif self._window.get_table(anime.user_status) != table:
+                    self._window.update_ui_signal.emit(
+                        functools.partial(table.removeRow, row)
+                    )
+
+        # Now loop through the animes and handle all the updates
+        for anime in self._animes:
+            found = False
+            table = self._window.get_table(anime.user_status)
+
+            # Loop through every row in the table it should be in
+            for row in range(table.rowCount()):
+                # Found it
+                if table.item(row, 0).anime == anime:
+                    found = True
+                    self._window.update_row_signal.emit(table, row, anime)  # type: ignore
+
+            # If we didn't find it, then insert it
+            if not found:
+                self._window.insert_row_signal.emit(table, anime)  # type: ignore
+
+        # Make sure things are sorted properly
+        for table in self._window.tables:
+            if table.isSortingEnabled():
+                # This will immediately trigger a sort based on the sort option
+                # selected, so we just set it to True again, since as far as I can
+                # tell there's no way to GET the current sort option
+                table.setSortingEnabled(True)
 
 
 class StatusHelper:

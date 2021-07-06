@@ -376,7 +376,7 @@ class AnimeFile:
         else:
             return data
 
-    def load_subtitles(self, standalone_subs: Dict[Tuple[str, int], SubtitleTrack]):
+    def load_subtitles(self, standalone_subs: Dict[Tuple[str, int], str]):
         self.subtitles = []
 
         sub_id = 1
@@ -391,7 +391,7 @@ class AnimeFile:
         # Now find all the matching standalone ones
         for key, track in standalone_subs.items():
             if key[0] == self.title and key[1] == self.episode_number:
-                self.subtitles.append(track)
+                self.subtitles.append(SubtitleTrack.from_file(track))
 
 
 class SubtitleTrack:
@@ -416,12 +416,9 @@ class SubtitleTrack:
 
     @classmethod
     def from_file(cls, file: str):
-        try:
-            data = ffmpeg.probe(file)["streams"][0]
-            data["file_name"] = file
-            return cls.from_data(data)
-        except ffmpeg.Error:
-            return None
+        data = ffmpeg.probe(file)["streams"][0]
+        data["file_name"] = file
+        return cls.from_data(data)
 
     @property
     def is_songs_signs(self) -> bool:
