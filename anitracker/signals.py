@@ -28,12 +28,15 @@ class HiddenProgressBarItem(QTableWidgetItem):
         self.anime = anime
 
     @property
-    def amount(self):
-        return (
-            self.anime.progress / self.anime.episode_count
-            if self.anime.episode_count
-            else 0
-        )
+    def amount(self) -> float:
+        if isinstance(self.anime, AnimeCollection):
+            return (
+                self.anime.progress / self.anime.episode_count
+                if self.anime.episode_count
+                else 0.0
+            )
+        else:
+            return 0.0
 
     def __lt__(self, other):
         return self.amount < other.amount
@@ -185,7 +188,7 @@ class SignalConnector:
     # Anime in table was right clicked
     def open_anime_context_menu(self, table: QTableWidget, _: QPoint):
         # Get attrs that will be used a bit
-        anime: Union[AnimeCollection, Anime] = table.selectedItems()[0].anime  # type: ignore
+        anime: Union[AnimeCollection, Anime] = cast(AnimeWidgetItem, table.selectedItems()[0]).anime
 
         # Setup the menu settings
         menu = QMenu(table)
@@ -211,6 +214,14 @@ class SignalConnector:
             remove = menu.addAction("Remove from list")
 
         menu.addSeparator()
+
+        # Just to shut up the linter
+        remove = None
+        folder = ""
+        open_folder = None
+        play_next = None
+        play_opts = {}
+        next_ep = 0
 
         if isinstance(anime, AnimeCollection):
             # Add episode options
@@ -298,7 +309,7 @@ class SignalConnector:
     # Browse for anime folder was clicked
     def select_anime_path(self):
         dir = QFileDialog.getExistingDirectory(
-            None, "Choose Anime Path", "", QFileDialog.ShowDirsOnly
+            None, "Choose Anime Path", "", QFileDialog.options.ShowDirsOnly
         )
 
         self.settings_window.AnimeFolderLineEdit.setText(dir)
@@ -335,7 +346,7 @@ class SignalConnector:
             # Loop through every row in the table it should be in
             for row in range(table.rowCount()):
                 # Found it
-                if table.item(row, 0).anime == anime:
+                if cast(AnimeWidgetItem, table.item(row, 0)).anime == anime:
                     found = True
                     self.window.update_row_signal.emit(table, row, anime)  # type: ignore
 
@@ -393,7 +404,7 @@ class SignalConnector:
     def filter_row(self, text: str):
         for table in self.window.tables:
             for row in range(table.rowCount()):
-                anime = AnimeWidgetItem, table.item(row, 0).anime
+                anime = cast(AnimeWidgetItem, table.item(row, 0)).anime
                 if (
                     text.lower() in anime.english_title.lower()
                     or text.lower() in anime.romaji_title.lower()
@@ -425,7 +436,7 @@ class SignalConnector:
 
     # Change banner
     def change_banner(self, item: AnimeWidgetItem):
-        self.window.ui.BannerViewer.setUrl(item.anime.cover_image)
+        self.window.ui.BannerViewer.setUrl(QUrl(item.anime.cover_image))
 
     # Search anilist
     def search_anime(self):
@@ -454,7 +465,7 @@ class SignalConnector:
                     r = int(r)
 
                 item = LinkWidgetItem(result[len(result) - 1])
-                item.setData(Qt.DisplayRole, r)
+                item.setData(Qt.DisplayRole, r) # type: ignore
                 item.setToolTip(result[i])
                 nyaa.setItem(nyaa.rowCount() - 1, i, item)
 
@@ -527,7 +538,7 @@ class SignalConnector:
 
             # Create our custom anime widget item
             item = AnimeWidgetItem(anime)
-            item.setData(Qt.DisplayRole, piece)
+            item.setData(Qt.DisplayRole, piece) # type: ignore
             item.setToolTip(str(piece))
             table.setItem(row_pos, index, item)
 
@@ -546,7 +557,7 @@ class SignalConnector:
         bar.setValue(anime.progress)
         if anime.episode_count:
             table.item(row, 0).setData(
-                Qt.UserRole, anime.progress / anime.episode_count
+                Qt.UserRole, anime.progress / anime.episode_count # type: ignore
             )
 
         if missing := self.window.app.missing_eps(anime):
@@ -569,7 +580,7 @@ class SignalConnector:
             if piece.isdigit():
                 piece = int(piece)
 
-            table.item(row, index).setData(Qt.DisplayRole, piece)
+            table.item(row, index).setData(Qt.DisplayRole, piece) # type: ignore
             table.item(row, index).setToolTip(str(piece))
 
     # Column was resized in a table
