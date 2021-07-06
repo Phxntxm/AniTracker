@@ -4,6 +4,7 @@ rapidfuzz==1.4.1
 toml==0.10.2
 PySide2==5.15.2
 pycountry==20.7.3
+BeautifulSoup4==4.9.3
 requests
 types-requests
 types-toml
