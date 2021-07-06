@@ -127,7 +127,7 @@ class SignalConnector:
                     alpha_3=self.window.app._config["subtitle"]
                 ).name
             )
-        except KeyError:
+        except (KeyError, AttributeError):
             pass
         try:
             b = self.window.app._config["skip_songs_signs"]
