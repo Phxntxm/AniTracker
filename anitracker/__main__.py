@@ -2,13 +2,9 @@ from __future__ import annotations
 
 import functools
 import os
-import subprocess
 import sys
-import webbrowser
-from enum import Enum
-from typing import Callable, Dict, List, Optional, Union, cast
+from typing import Dict, List, Optional, Union, cast
 
-import pycountry
 from PySide2.QtCore import *  # type: ignore
 from PySide2.QtGui import *  # type: ignore
 from PySide2.QtWidgets import *  # type: ignore
@@ -17,64 +13,8 @@ from anitracker import __version__
 from anitracker.anitracker import AniTracker
 from anitracker.background import *
 from anitracker.media import Anime, AnimeCollection, UserStatus
-from anitracker.ui import Ui_About, Ui_AnimeApp, Ui_AnimeInfo, Ui_Settings
-from anitracker.signals import SignalConnector
-
-
-class MouseFilter(QObject):
-    def __init__(self, table: QTableWidget, parent: Optional[QObject] = None) -> None:
-        super().__init__(parent=parent)
-
-        self._table = table
-        self._playing_episode: Union[PlayEpisode, None] = None
-
-    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
-        parent = cast(MainWindow, self.parent())
-
-        if not isinstance(event, QMouseEvent):
-            return False
-
-        # Get the item at that position
-        item = cast(AnimeWidgetItem, self._table.itemAt(event.pos()))
-
-        # If we've pressed and released
-        if event.type() is QEvent.MouseButtonDblClick:
-            parent.open_anime_settings(item.anime)
-
-        if (
-            event.type() is QEvent.MouseButtonRelease
-            and event.button() is Qt.MiddleButton
-            and isinstance(item.anime, AnimeCollection)
-        ):
-            self._playing_episode = PlayEpisode(
-                item.anime, item.anime.progress + 1, parent
-            )
-            self._playing_episode.start()
-        return super().eventFilter(watched, event)
-
-
-class HiddenProgressBarItem(QTableWidgetItem):
-    def __init__(self, anime: Union[AnimeCollection, Anime]) -> None:
-        super().__init__("")
-        self.anime = anime
-
-    @property
-    def amount(self):
-        return (
-            self.anime.progress / self.anime.episode_count
-            if self.anime.episode_count
-            else 0
-        )
-
-    def __lt__(self, other):
-        return self.amount < other.amount
-
-
-class AnimeWidgetItem(QTableWidgetItem):
-    def __init__(self, anime: Union[AnimeCollection, Anime]):
-        super().__init__()
-
-        self.anime = anime
+from anitracker.signals import SignalConnector, MouseFilter
+from anitracker.ui import Ui_AnimeApp, Ui_AnimeInfo
 
 
 class MainWindow(QMainWindow):
@@ -241,6 +181,7 @@ class MainWindow(QMainWindow):
         # https://bugreports.qt.io/browse/QTBUG-12889
         # Asanine
         self.ui.AnilistSearchResults.horizontalHeader().setVisible(True)
+        self.ui.NyaaSearchResults.horizontalHeader().setVisible(True)
 
         for table in self.tables:
             # Insert the column for progress first
@@ -248,6 +189,15 @@ class MainWindow(QMainWindow):
             table.setColumnWidth(0, 200)
 
             default_table_setup(table)
+
+        # Nyaa search setup is a little different
+        headers = ["title", "size", "date", "seeders", "leechers", "downloads"]
+        nyaa = self.ui.NyaaSearchResults
+        for _ in headers:
+            nyaa.insertColumn(nyaa.columnCount())
+
+        nyaa.setHorizontalHeaderLabels(headers)
+        nyaa.viewport().installEventFilter(MouseFilter(nyaa, self))
 
     def connect_signals(self):
         self.insert_row_signal.connect(self.signals.insert_row)  # type: ignore
@@ -260,6 +210,7 @@ class MainWindow(QMainWindow):
         self.anime_updater.handle_anime_updates.connect(self.signals.handle_anime_updates)  # type: ignore
         self.update_success.toggle.connect(self.signals.toggle_success)  # type: ignore
         self.ui.AnilistSearchButton.clicked.connect(self.signals.search_anime)  # type: ignore
+        self.ui.NyaaSearchButton.clicked.connect(self.signals.search_nyaa)  # type: ignore
         self.ui.AnimeListChooser.currentRowChanged.connect(self.signals.change_page)  # type: ignore
         self.ui.actionSettings.triggered.connect(self.signals.open_settings)  # type: ignore
         self.ui.actionRefresh.triggered.connect(self.anime_updater.start)  # type: ignore

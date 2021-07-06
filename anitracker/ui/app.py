@@ -217,10 +217,10 @@ class Ui_AnimeApp(object):
         self.AnimeSearchPage = QWidget()
         self.AnimeSearchPage.setObjectName(u"AnimeSearchPage")
         self.AnimeSearchPage.setStyleSheet(u"")
-        self.tabWidget = QTabWidget(self.AnimeSearchPage)
-        self.tabWidget.setObjectName(u"tabWidget")
-        self.tabWidget.setGeometry(QRect(0, 10, 791, 491))
-        self.tabWidget.setStyleSheet(u"QHeaderView::section{\n"
+        self.SearchTabs = QTabWidget(self.AnimeSearchPage)
+        self.SearchTabs.setObjectName(u"SearchTabs")
+        self.SearchTabs.setGeometry(QRect(0, 10, 791, 491))
+        self.SearchTabs.setStyleSheet(u"QHeaderView::section{\n"
 "	background-color: rgb(68, 68, 68);\n"
 "}\n"
 "QTabWidget::pane {\n"
@@ -275,7 +275,35 @@ class Ui_AnimeApp(object):
         self.AnilistSearchButton = QPushButton(self.AnilistSearchTab)
         self.AnilistSearchButton.setObjectName(u"AnilistSearchButton")
         self.AnilistSearchButton.setGeometry(QRect(240, 10, 91, 31))
-        self.tabWidget.addTab(self.AnilistSearchTab, "")
+        self.SearchTabs.addTab(self.AnilistSearchTab, "")
+        self.NyaaSearchTab = QWidget()
+        self.NyaaSearchTab.setObjectName(u"NyaaSearchTab")
+        self.NyaaSearchResults = QTableWidget(self.NyaaSearchTab)
+        self.NyaaSearchResults.setObjectName(u"NyaaSearchResults")
+        self.NyaaSearchResults.setGeometry(QRect(10, 50, 771, 401))
+        self.NyaaSearchResults.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
+"alternate-background-color: rgb(95, 95, 95);\n"
+"color: rgb(212, 212, 212);")
+        self.NyaaSearchResults.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.NyaaSearchResults.setAlternatingRowColors(True)
+        self.NyaaSearchResults.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.NyaaSearchResults.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.NyaaSearchResults.setSortingEnabled(True)
+        self.NyaaSearchResults.setWordWrap(False)
+        self.NyaaSearchResults.setCornerButtonEnabled(False)
+        self.NyaaSearchResults.setRowCount(0)
+        self.NyaaSearchResults.setColumnCount(0)
+        self.NyaaSearchResults.horizontalHeader().setVisible(False)
+        self.NyaaSearchResults.horizontalHeader().setHighlightSections(False)
+        self.NyaaSearchResults.verticalHeader().setVisible(False)
+        self.NyaaSearchResults.verticalHeader().setHighlightSections(False)
+        self.NyaaSearchButton = QPushButton(self.NyaaSearchTab)
+        self.NyaaSearchButton.setObjectName(u"NyaaSearchButton")
+        self.NyaaSearchButton.setGeometry(QRect(240, 10, 91, 31))
+        self.NyaaSearchLineEdit = QLineEdit(self.NyaaSearchTab)
+        self.NyaaSearchLineEdit.setObjectName(u"NyaaSearchLineEdit")
+        self.NyaaSearchLineEdit.setGeometry(QRect(10, 10, 221, 31))
+        self.SearchTabs.addTab(self.NyaaSearchTab, "")
         self.AnimePages.addWidget(self.AnimeSearchPage)
         self.AnimeListChooser = QListWidget(self.MainWidget)
         QListWidgetItem(self.AnimeListChooser)
@@ -327,10 +355,11 @@ class Ui_AnimeApp(object):
 
         self.retranslateUi(AnimeApp)
         self.AnilistSearchLineEdit.returnPressed.connect(self.AnilistSearchButton.click)
+        self.NyaaSearchLineEdit.returnPressed.connect(self.NyaaSearchButton.click)
 
         self.AnimePages.setCurrentIndex(0)
         self.AnimeListTab.setCurrentIndex(0)
-        self.tabWidget.setCurrentIndex(0)
+        self.SearchTabs.setCurrentIndex(0)
 
 
         QMetaObject.connectSlotsByName(AnimeApp)
@@ -364,7 +393,10 @@ class Ui_AnimeApp(object):
         self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.DroppedTab), QCoreApplication.translate("AnimeApp", u"Dropped", None))
         self.AnilistSearchLineEdit.setPlaceholderText(QCoreApplication.translate("AnimeApp", u"Search Anime", None))
         self.AnilistSearchButton.setText(QCoreApplication.translate("AnimeApp", u"Search", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.AnilistSearchTab), QCoreApplication.translate("AnimeApp", u"Anilist", None))
+        self.SearchTabs.setTabText(self.SearchTabs.indexOf(self.AnilistSearchTab), QCoreApplication.translate("AnimeApp", u"Anilist", None))
+        self.NyaaSearchButton.setText(QCoreApplication.translate("AnimeApp", u"Search", None))
+        self.NyaaSearchLineEdit.setPlaceholderText(QCoreApplication.translate("AnimeApp", u"Search Anime", None))
+        self.SearchTabs.setTabText(self.SearchTabs.indexOf(self.NyaaSearchTab), QCoreApplication.translate("AnimeApp", u"Nyaa.si", None))
 
         __sortingEnabled = self.AnimeListChooser.isSortingEnabled()
         self.AnimeListChooser.setSortingEnabled(False)

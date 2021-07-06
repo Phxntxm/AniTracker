@@ -1,26 +1,22 @@
-from anitracker.media.anime import SubtitleTrack
 import os
+import re
 import shlex
 import subprocess
 import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    Generator,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
-import anitopy
+from typing import Any, Dict, Generator, Iterator, List, Optional, Tuple, Union
 
+import anitopy
+import requests
+from bs4 import BeautifulSoup as bs
 from rapidfuzz import fuzz
 
+from anitracker import __version__
 from anitracker.config import Config
 from anitracker.media import AnimeCollection, AnimeFile, UserStatus
+from anitracker.media.anime import SubtitleTrack
 from anitracker.sync import AniList
 
 video_file_extensions = [
@@ -311,7 +307,6 @@ class AniTracker:
             try:
                 data = anitopy.parse(file.name)
             except ValueError:
-                print("Failed to parse", file.name)
                 continue
             else:
                 # If we couldn't parse it, continue
@@ -333,3 +328,28 @@ class AniTracker:
                     self._standalone_subtitles[
                         (data["anime_title"], int(data["episode_number"]))
                     ] = str(file)
+
+    def search_nyaa(self, query: str) -> Iterator[List]:
+        url = "https://nyaa.si/"
+        params = {"f": 0, "c": "0_0", "q": query, "s": "seeders", "o": "desc"}
+        headers = {"User-Agent": f"AniTracker/{__version__} (Language=py)"}
+
+        with requests.get(url, params=params, headers=headers) as r:
+            soup = bs(r.text, features="html.parser")
+            body = soup.find("tbody")
+
+            if body is not None:
+                for result in body.findAll("tr"):
+                    children = result.findAll("td")
+
+                    yield [
+                        children[1].find("a", href=re.compile(r"^/view/\d+$")).text,
+                        children[3].text,
+                        children[4].text,
+                        children[5].text,
+                        children[6].text,
+                        children[7].text,
+                        children[2]
+                        .find("a", href=re.compile(r"^magnet:.*$"))
+                        .get("href"),
+                    ]

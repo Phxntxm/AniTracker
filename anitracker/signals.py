@@ -3,10 +3,11 @@ from __future__ import annotations
 from enum import Enum
 import os
 import pycountry
+import shlex
 import sys
 import subprocess
 import webbrowser
-from typing import Callable, TYPE_CHECKING, List, Union, cast
+from typing import Callable, TYPE_CHECKING, List, Union, cast, Optional
 
 from PySide2.QtCore import *  # type: ignore
 from PySide2.QtGui import *  # type: ignore
@@ -18,7 +19,7 @@ from anitracker.media import Anime, AnimeCollection, UserStatus
 from anitracker.background import PlayEpisode, EditAnime
 
 if TYPE_CHECKING:
-    from anitracker.__main__ import MainWindow, AnimeWidgetItem
+    from anitracker.__main__ import MainWindow
 
 
 class HiddenProgressBarItem(QTableWidgetItem):
@@ -43,6 +44,59 @@ class AnimeWidgetItem(QTableWidgetItem):
         super().__init__()
 
         self.anime = anime
+
+
+class LinkWidgetItem(QTableWidgetItem):
+    def __init__(self, link: str):
+        super().__init__()
+
+        self.link = link
+
+
+class MouseFilter(QObject):
+    def __init__(self, table: QTableWidget, parent: Optional[QObject] = None) -> None:
+        super().__init__(parent=parent)
+
+        self._table = table
+        self._playing_episode: Union[PlayEpisode, None] = None
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:
+        parent: MainWindow = self.parent()  # type: ignore
+
+        if not isinstance(event, QMouseEvent):
+            return False
+
+        # Get the item at that position
+        item = self._table.itemAt(event.pos())
+
+        if isinstance(item, AnimeWidgetItem):
+            # If we've pressed and released
+            if event.type() is QEvent.MouseButtonDblClick:
+                parent.open_anime_settings(item.anime)
+
+            if (
+                event.type() is QEvent.MouseButtonRelease
+                and event.button() is Qt.MiddleButton
+                and isinstance(item.anime, AnimeCollection)
+            ):
+                self._playing_episode = PlayEpisode(
+                    item.anime, item.anime.progress + 1, parent
+                )
+                self._playing_episode.start()
+        elif isinstance(item, LinkWidgetItem):
+            if event.type() is QEvent.MouseButtonDblClick:
+                if sys.platform.startswith("linux"):
+                    cmd = shlex.split(f"xdg-open '{item.link}'")
+                    subprocess.run(
+                        cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
+                    )
+                elif sys.platform.startswith("win32"):
+                    cmd = shlex.split(f"start '{item.link}'")
+                    subprocess.run(
+                        cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
+                    )
+
+        return super().eventFilter(watched, event)
 
 
 class SignalConnector:
@@ -384,6 +438,26 @@ class SignalConnector:
                 self.window.ui.AnilistSearchResults, result
             )
 
+    # Search nyaa.si
+    def search_nyaa(self):
+        nyaa = self.window.ui.NyaaSearchResults
+        nyaa.setRowCount(0)
+
+        for result in self.window.app.search_nyaa(
+            self.window.ui.NyaaSearchLineEdit.text()
+        ):
+            nyaa.insertRow(nyaa.rowCount())
+
+            for i in range(nyaa.columnCount()):
+                r = result[i]
+                if r.isdigit():
+                    r = int(r)
+
+                item = LinkWidgetItem(result[len(result) - 1])
+                item.setData(Qt.DisplayRole, r)
+                item.setToolTip(result[i])
+                nyaa.setItem(nyaa.rowCount() - 1, i, item)
+
     # Insert a row into the specified table
     def insert_row(self, table: QTableWidget, anime: Union[AnimeCollection, Anime]):
         row_pos = table.rowCount()
@@ -448,11 +522,13 @@ class SignalConnector:
                 piece = piece.name.title()
             else:
                 piece = str(piece)
+            if piece.isdigit():
+                piece = int(piece)
 
             # Create our custom anime widget item
             item = AnimeWidgetItem(anime)
             item.setData(Qt.DisplayRole, piece)
-            item.setToolTip(piece)
+            item.setToolTip(str(piece))
             table.setItem(row_pos, index, item)
 
         # # Make sure things are sorted properly
@@ -490,9 +566,11 @@ class SignalConnector:
                 piece = piece.name.title()
             else:
                 piece = str(piece)
+            if piece.isdigit():
+                piece = int(piece)
 
             table.item(row, index).setData(Qt.DisplayRole, piece)
-            table.item(row, index).setToolTip(piece)
+            table.item(row, index).setToolTip(str(piece))
 
     # Column was resized in a table
     def resized_column(self, table: QTableWidget, column: int, _: int, size: int):
