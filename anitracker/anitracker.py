@@ -321,10 +321,10 @@ class AniTracker:
             data["file_name"] = str(file)
 
             # If it's a video file just yield it
-            if data["file_extension"].lower() in video_file_extensions:
+            if data.get("file_extension", "").lower() in video_file_extensions:
                 yield AnimeFile.from_data(data)
             # Otherwise if it's a subtitle track, store it
-            if data["file_extension"].lower() in subtitle_file_extensions:
+            if data.get("file_extension", "").lower() in subtitle_file_extensions:
                 sub = SubtitleTrack.from_file(data["file_name"])
                 if sub is not None:
                     self._standalone_subtitles[

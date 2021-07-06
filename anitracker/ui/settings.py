@@ -82,6 +82,8 @@ class Ui_Settings(object):
         self.SubtitleLanguage = QComboBox(self.GeneralSettingsTab)
         self.SubtitleLanguage.setObjectName(u"SubtitleLanguage")
         self.SubtitleLanguage.setGeometry(QRect(140, 40, 131, 25))
+        self.SubtitleLanguage.setEditable(True)
+        self.SubtitleLanguage.setInsertPolicy(QComboBox.NoInsert)
         self.SettingsTabWidget.addTab(self.GeneralSettingsTab, "")
         self.AnilistSettingsTab = QWidget()
         self.AnilistSettingsTab.setObjectName(u"AnilistSettingsTab")

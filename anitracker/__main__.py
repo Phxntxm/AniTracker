@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import functools
 import os
-import pycountry
 import subprocess
 import sys
+import time
 import webbrowser
-from datetime import date
 from enum import Enum
 from typing import Dict, List, Optional, Union, cast
 
+import pycountry
 from PySide2.QtCore import *  # type: ignore
 from PySide2.QtGui import *  # type: ignore
 from PySide2.QtWidgets import *  # type: ignore
@@ -17,7 +17,7 @@ from PySide2.QtWidgets import *  # type: ignore
 from anitracker import __version__
 from anitracker.anitracker import AniTracker
 from anitracker.background import *
-from anitracker.media import AnimeCollection, Anime, UserStatus
+from anitracker.media import Anime, AnimeCollection, UserStatus
 from anitracker.ui import Ui_About, Ui_AnimeApp, Ui_AnimeInfo, Ui_Settings
 
 
@@ -94,16 +94,6 @@ class MainWindow(QMainWindow):
         self.app = AniTracker()
         # A list of the status helpers
         self.statuses: List[StatusHelper] = []
-        # Settings menu stuff
-        self.settings_widget = QTabWidget()
-        self.settings_window = Ui_Settings()
-        self.settings_window.setupUi(self.settings_widget)
-        # Anime settings stuff
-        self.anime_menu = QTabWidget()
-        self.anime_window = Ui_AnimeInfo()
-        self.anime_window.setupUi(self.anime_menu)
-        # Bro why is this modifable in the designer? Stupid
-        self.anime_window.AnimeUpdateSuccess.setVisible(False)
         # A dict of the headers to whether they're enabled by default
         # TODO: pull enabled/disabled from config
         # TODO: Figure out how to make the header not go away when all columns are hidden
@@ -172,38 +162,12 @@ class MainWindow(QMainWindow):
         self._update_anime_files_loop.start()
         self.status_update_worker.start()
 
-        # Setup the settings stuff
-
-        self.settings_window.SubtitleLanguage.addItems(
-            sorted([l.name for l in pycountry.languages])
-        )
-
-        # Setup initial settings info
-        try:
-            self.settings_window.AnimeFolderLineEdit.setText(
-                self.app._config["animedir"]
-            )
-        except KeyError:
-            pass
-        try:
-            self.settings_window.SubtitleLanguage.setCurrentText(
-                pycountry.languages.get(alpha_3=self.app._config["subtitle"]).name
-            )
-        except KeyError:
-            pass
-        try:
-            b = self.app._config["skip_songs_signs"]
-            state = Qt.CheckState.Checked if b else Qt.CheckState.Unchecked
-            self.settings_window.IgnoreSongsSignsCheckbox.setCheckState(state)
-        except KeyError:
-            pass
-
     def custom_ui(self):
         def default_table_setup(_table: QTableWidget, skip_user_settings: bool = False):
             # Create a menu per table
             menu = _table.menu = QMenu(self.ui.AnimeListTab)  # type: ignore
             menu.setStyleSheet("QMenu::item:selected {background-color: #007fd4}")
-            menu.triggered.connect(self.header_changed)  # type: ignore
+            menu.triggered.connect(functools.partial(self.header_changed, _table))  # type: ignore
             # Set the custom context menu on the *header*, this is how
             # we switch which columns are visible
             _table.horizontalHeader().setContextMenuPolicy(
@@ -275,24 +239,9 @@ class MainWindow(QMainWindow):
         self.status_update_worker.update.connect(self.update_status)  # type: ignore
         self.update_worker.reload_anime_eps.connect(self.reload_anime_eps)  # type: ignore
         self._update_anime_files_loop.reload_anime_eps.connect(self.reload_anime_eps)  # type: ignore
-        self.anilist_connector.update_label.connect(  # type: ignore
-            self.settings_window.AnilistConnectedAccountLabel.setText
-        )
+
         self.anime_updater.handle_anime_updates.connect(self.handle_anime_updates)  # type: ignore
         self.update_success.toggle.connect(self.toggle_success)  # type: ignore
-        self.settings_window.AnilistConnect.clicked.connect(  # type: ignore
-            self.app._anilist.open_oauth
-        )
-        self.settings_window.AnilistCodeConfirm.clicked.connect(  # type: ignore
-            self.anilist_code_confirm
-        )
-        self.settings_window.AnimeFolderBrowse.clicked.connect(self.select_anime_path)  # type: ignore
-        self.settings_window.IgnoreSongsSignsCheckbox.stateChanged.connect(  # type: ignore
-            self.update_songs_signs
-        )
-        self.settings_window.SubtitleLanguage.currentIndexChanged.connect(  # type: ignore
-            self.change_language
-        )
 
         self.ui.AnilistSearchButton.clicked.connect(self.search_anime)  # type: ignore
         self.ui.AnimeListChooser.currentRowChanged.connect(self.change_page)  # type: ignore
@@ -368,13 +317,6 @@ class MainWindow(QMainWindow):
             headers[header] = opt
 
         return headers
-
-    def update_anilist_acc_label(self):
-        # Only do this if we verified
-        if self.app._anilist.authenticated:
-            self.settings_window.AnilistConnectedAccountLabel.setText(
-                f"Connected account: {self.app._anilist.name}"
-            )
 
     def insert_row(self, table: QTableWidget, anime: Union[AnimeCollection, Anime]):
         row_pos = table.rowCount()
@@ -463,27 +405,30 @@ class MainWindow(QMainWindow):
             )
 
         if missing := self.app.missing_eps(anime):
-            tt = f"Missing episodes: {missing}"
+            bar.setToolTip(f"Missing episodes: {missing}")
         else:
-            tt = "Found all episodes"
-
-        bar.setToolTip(tt)
+            bar.setToolTip("Found all episodes")
 
         # Now loop through the normal headers
         for index, attr in enumerate(self._header_labels, start=1):
             piece = getattr(anime, attr, "")
             if isinstance(piece, Enum):
                 piece = piece.name.title()
-            elif isinstance(piece, date):
+            else:
                 piece = str(piece)
 
             table.item(row, index).setData(Qt.DisplayRole, piece)
-            table.item(row, index).setToolTip(tt)
+            table.item(row, index).setToolTip(piece)
 
     def open_anime_settings(self, anime: Union[Anime, AnimeCollection]):
+        # Anime settings stuff
+        m = self.anime_menu = QTabWidget()
+        s = self.anime_window = Ui_AnimeInfo()
+        self.anime_window.setupUi(self.anime_menu)
+        # Bro why is this modifable in the designer? Stupid
+        s.AnimeUpdateSuccess.setVisible(False)
+
         # Pull up anime info
-        s = self.anime_window
-        m = self.anime_menu
         s.AnimeTitleLabel.setText("\n".join(t for t in anime.titles if t))
         s.AnimeDescriptionLabel.setText(anime.description)
         s.AnimeGenresLabel.setText("\n".join(anime.genres))
@@ -507,14 +452,57 @@ class MainWindow(QMainWindow):
             s.AnimeNotes.setVisible(False)
             s.AnimeUpdateButton.setVisible(False)
         m.setFixedSize(m.size())
+
         m.show()
 
     ### Signals
 
     # Settings action was clicked
     def open_settings(self):
-        self.settings_widget.setFixedSize(self.settings_widget.size())
-        self.settings_widget.show()
+        # Settings menu stuff
+        w = self.settings_widget = QTabWidget()
+        s = self.settings_window = Ui_Settings()
+        s.setupUi(w)
+
+        s.SubtitleLanguage.clear()
+        s.SubtitleLanguage.addItems(sorted([l.name for l in pycountry.languages]))
+
+        # Setup initial settings info
+        try:
+            s.AnimeFolderLineEdit.setText(self.app._config["animedir"])
+        except KeyError:
+            pass
+        try:
+            s.SubtitleLanguage.setCurrentText(
+                pycountry.languages.get(alpha_3=self.app._config["subtitle"]).name
+            )
+        except KeyError:
+            pass
+        try:
+            b = self.app._config["skip_songs_signs"]
+            state = Qt.CheckState.Checked if b else Qt.CheckState.Unchecked
+            s.IgnoreSongsSignsCheckbox.setCheckState(state)
+        except KeyError:
+            pass
+
+        self.anilist_connector.update_label.connect(  # type: ignore
+            s.AnilistConnectedAccountLabel.setText
+        )
+        s.AnilistConnectedAccountLabel.setText(
+            f"Connected account: {self.app._anilist.name}"
+        )
+        s.AnilistConnect.clicked.connect(self.app._anilist.open_oauth)  # type: ignore
+        s.AnilistCodeConfirm.clicked.connect(self.anilist_code_confirm)  # type: ignore
+        s.AnimeFolderBrowse.clicked.connect(self.select_anime_path)  # type: ignore
+        s.IgnoreSongsSignsCheckbox.stateChanged.connect(  # type: ignore
+            self.update_songs_signs
+        )
+        s.SubtitleLanguage.currentIndexChanged.connect(  # type: ignore
+            self.change_language
+        )
+
+        w.setFixedSize(w.size())
+        w.show()
 
     # Confirm anilist code
     def anilist_code_confirm(self):
@@ -528,19 +516,15 @@ class MainWindow(QMainWindow):
         self.update_anilist_acc_label()
 
     # Header context menu option selected
-    # TODO: Fix!
-    def header_changed(self, _action: QAction):
-        # Get the index of this header, it will match up with the table
-        index = self.pretty_headers.index(_action.text())
-        # Set the column hidden based on the action's checked status
-        self.current_table.setColumnHidden(index + 1, not _action.isChecked())
-
-        # Now save in config
-        self.app._config.set_option(
-            list(self._header_labels.keys())[index],
-            _action.isChecked(),
-            section=self.current_table.objectName(),
-        )
+    def header_changed(self, table: QTableWidget, _action: QAction):
+        # Loop through each column
+        for index in range(table.columnCount()):
+            # Get the text for this header
+            text = table.horizontalHeaderItem(index).text()
+            # If this is the text that matters
+            if text == _action.text():
+                table.setColumnHidden(index, not _action.isChecked())
+                return
 
     # Header was right clicked
     def open_header_menu(self, table: QTableWidget, point: QPoint):
@@ -733,7 +717,8 @@ class MainWindow(QMainWindow):
         notes = self.anime_window.AnimeNotes.toPlainText()
         score = self.anime_window.AnimeUserScore.value()
 
-        anime.edit(self.app._anilist, score=score, notes=notes)
+        self._anime_editing_thread = EditAnime(self, anime, notes=notes, score=score)
+        self._anime_editing_thread.start()
 
     # About was clicked
     def open_about(self):
@@ -781,7 +766,6 @@ class MainWindow(QMainWindow):
     def change_language(self, index):
         lang = self.settings_window.SubtitleLanguage.itemText(index)
         alpha_3 = pycountry.languages.get(name=lang).alpha_3
-
         self.app._config["subtitle"] = alpha_3
 
     # Page was updated

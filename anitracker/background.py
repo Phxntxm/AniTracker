@@ -5,14 +5,14 @@ import sys
 import tempfile
 import traceback
 from time import sleep
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 import requests
-from PySide2.QtCore import *
-from PySide2.QtGui import *
-from PySide2.QtWidgets import *
+from PySide2.QtCore import *  # type: ignore
+from PySide2.QtGui import *  # type: ignore
+from PySide2.QtWidgets import *  # type: ignore
 
-from anitracker.media import AnimeCollection
+from anitracker.media import AnimeCollection, Anime
 
 if TYPE_CHECKING:
     from anitracker.__main__ import MainWindow
@@ -26,6 +26,7 @@ __all__ = (
     "AnimeUpdateSuccess",
     "StatusLabelUpdater",
     "UpdateChecker",
+    "EditAnime",
     "StatusHelper",
 )
 
@@ -269,6 +270,27 @@ class UpdateChecker(QThread):
             # After all is said and done, remove our status
             self._window.statuses.remove(status)
 
+        except:
+            traceback.print_exc()
+
+
+class EditAnime(QThread):
+    def __init__(
+        self, window: MainWindow, anime: Union[Anime, AnimeCollection], **kwargs
+    ):
+        super().__init__()
+        self._window = window
+        self._anime = anime
+
+        self._params = kwargs
+
+    @Slot()
+    def run(self):
+        try:
+            status = StatusHelper("Updating anime lists")
+            self._window.statuses.append(status)
+            self._anime.edit(self._window.app._anilist, **self._params)
+            self._window.statuses.remove(status)
         except:
             traceback.print_exc()
 

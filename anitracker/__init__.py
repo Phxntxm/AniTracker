@@ -2,4 +2,4 @@ from .config import Config
 from .anitracker import AniTracker
 
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
