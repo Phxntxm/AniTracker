@@ -309,7 +309,7 @@ class SignalConnector:
     # Browse for anime folder was clicked
     def select_anime_path(self):
         dir = QFileDialog.getExistingDirectory(
-            None, "Choose Anime Path", "", QFileDialog.options.ShowDirsOnly
+            None, "Choose Anime Path", "", QFileDialog.ShowDirsOnly # type: ignore
         )
 
         self.settings_window.AnimeFolderLineEdit.setText(dir)
