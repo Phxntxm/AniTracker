@@ -202,7 +202,6 @@ class MainWindow(QMainWindow):
     def connect_signals(self):
         self.insert_row_signal.connect(self.signals.insert_row)  # type: ignore
         self.update_row_signal.connect(self.signals.update_row)  # type: ignore
-        self.anilist_connector.update_label.connect(self.signals.) # type: ignore
         self.filter_anime.textChanged.connect(self.signals.filter_row)  # type: ignore
         self.status_update_worker.update.connect(self.signals.update_status)  # type: ignore
         self.update_worker.reload_anime_eps.connect(self.signals.reload_anime_eps)  # type: ignore
