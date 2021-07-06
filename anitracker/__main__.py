@@ -186,6 +186,9 @@ class MainWindow(QMainWindow):
             _table.customContextMenuRequested.connect(functools.partial(self.signals.open_anime_context_menu, _table))  # type: ignore
             _table.viewport().installEventFilter(MouseFilter(_table, self))
             _table.itemClicked.connect(self.signals.change_banner)  # type: ignore
+            _table.horizontalHeader().sectionResized.connect(  # type: ignore
+                functools.partial(self.signals.resized_column, _table)
+            )
 
             headers = []
 
@@ -221,6 +224,15 @@ class MainWindow(QMainWindow):
                     _table.setColumnHidden(_table.columnCount() - 1, True)
 
                 menu.addAction(action)
+
+            # This has to be done after due to the difference in the 0th column
+            # in some of the tables
+            for index in range(_table.columnCount()):
+                size = self.app._config.get_option(
+                    str(index), section=_table.objectName()
+                )
+                if size is not None:
+                    _table.setColumnWidth(index, int(size))
 
             # Setting headers has to come after
             _table.setHorizontalHeaderLabels(headers)

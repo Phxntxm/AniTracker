@@ -116,6 +116,12 @@ class SignalConnector:
             # If this is the text that matters
             if text == _action.text():
                 table.setColumnHidden(index, not _action.isChecked())
+                # Now set this option in the config
+                self.window.app._config.set_option(
+                    _action.text().lower().replace(" ", "_"),
+                    _action.isChecked(),
+                    section=table.objectName(),
+                )
                 return
 
     # Header was right clicked
@@ -433,6 +439,9 @@ class SignalConnector:
 
         for index in range(table.columnCount()):
             header = table.horizontalHeaderItem(index).text().lower().replace(" ", "_")
+            # Skip the progress, we handled that already
+            if header == "progress":
+                continue
 
             piece = getattr(anime, header, "")
             if isinstance(piece, Enum):
@@ -453,6 +462,7 @@ class SignalConnector:
             # tell there's no way to GET the current sort option
             table.setSortingEnabled(True)
 
+    # Update a specific row to an anime
     def update_row(self, table: QTableWidget, row: int, anime: AnimeCollection):
         # Set the progress bar's data
         bar = cast(QProgressBar, table.cellWidget(row, 0).findChild(QProgressBar))
@@ -471,6 +481,11 @@ class SignalConnector:
         # Now loop through the normal headers
         for index, attr in enumerate(self.window._header_labels, start=1):
             piece = getattr(anime, attr, "")
+
+            # Skip the progress, we handled that already
+            if attr == "progress":
+                continue
+
             if isinstance(piece, Enum):
                 piece = piece.name.title()
             else:
@@ -478,6 +493,17 @@ class SignalConnector:
 
             table.item(row, index).setData(Qt.DisplayRole, piece)
             table.item(row, index).setToolTip(piece)
+
+    # Column was resized in a table
+    def resized_column(self, table: QTableWidget, column: int, _: int, size: int):
+        # This happens on initial startup
+        if size == 0:
+            return
+
+        # Now set this option in the config
+        self.window.app._config.set_option(
+            str(column), size, section=table.objectName()
+        )
 
     # This is simply here to facilitate easier handling of UI updates in threads
     def handle_ui_update(self, func: Callable[..., None]):
