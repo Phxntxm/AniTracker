@@ -142,3 +142,4 @@ run.env
 resources/
 distribute/
 *.ui
+ffprobe*
