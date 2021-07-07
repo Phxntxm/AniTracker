@@ -193,7 +193,8 @@ class AniTracker:
         subprocess.run(cmd, capture_output=True)
 
     def _play_episode_default_windows(self, episode: AnimeFile):
-        os.startfile(episode.file)  # type: ignore
+        f = episode.file.replace("/", "\\")
+        subprocess.run(["start", f'"{f}"'])
 
     def _play_episode_mpv(
         self, episode: AnimeFile, *, subtitle: Optional[SubtitleTrack] = None

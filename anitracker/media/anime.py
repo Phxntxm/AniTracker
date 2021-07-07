@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import os
+import sys
 from dataclasses import dataclass
 from datetime import date
 from enum import Enum, auto
-from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import ffmpeg
 
@@ -36,6 +38,15 @@ class AnimeStatus(Enum):
     CANCELLED = auto()
     HIATUS = auto()
 
+ffprobe_cmd = "ffprobe"
+
+if hasattr(sys, "_MEIPASS"):
+    if sys.platform.startswith("win32"):
+        ffprobe_cmd = f"{sys._MEIPASS}/ffprobe.exe"
+    elif sys.platform.startswith("linux"):
+        ffprobe_cmd = f"{sys._MEIPASS}/ffprobe"
+
+    print(ffprobe_cmd)
 
 @dataclass
 class Anime:
@@ -370,7 +381,7 @@ class AnimeFile:
 
     def _mediainfo(self) -> Dict:
         try:
-            data = ffmpeg.probe(self.file)
+            data = ffmpeg.probe(self.file, ffprobe_cmd)
         except ffmpeg.Error:
             return {}
         else:
@@ -416,7 +427,7 @@ class SubtitleTrack:
 
     @classmethod
     def from_file(cls, file: str):
-        data = ffmpeg.probe(file)["streams"][0]
+        data = ffmpeg.probe(file, ffprobe_cmd)["streams"][0]
         data["file_name"] = file
         return cls.from_data(data)
 
