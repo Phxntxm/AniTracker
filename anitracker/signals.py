@@ -170,7 +170,6 @@ class SignalConnector:
                 f"Connected account: {self.window.app._anilist.name}"
             )
 
-
     # Header context menu option selected
     def header_changed(self, table: QTableWidget, _action: QAction):
         # Loop through each column
@@ -195,7 +194,9 @@ class SignalConnector:
     # Anime in table was right clicked
     def open_anime_context_menu(self, table: QTableWidget, _: QPoint):
         # Get attrs that will be used a bit
-        anime: Union[AnimeCollection, Anime] = cast(AnimeWidgetItem, table.selectedItems()[0]).anime
+        anime: Union[AnimeCollection, Anime] = cast(
+            AnimeWidgetItem, table.selectedItems()[0]
+        ).anime
 
         # Setup the menu settings
         menu = QMenu(table)
@@ -289,7 +290,7 @@ class SignalConnector:
         if isinstance(anime, AnimeCollection):
             if action == remove:
                 anime.delete(self.window.app._anilist)
-                del self.window.app._animes[anime.id]
+                self.window.app.remove_anime(anime.id)
             elif action == open_folder and folder is not None:
                 if sys.platform.startswith("win32"):
                     subprocess.Popen(["start", folder], shell=True)
@@ -311,12 +312,12 @@ class SignalConnector:
         if not isinstance(anime, AnimeCollection):
             self.window.anime_updater.start()
 
-        self.handle_anime_updates(list(self.window.app.animes.values()))
+        self.handle_anime_updates()
 
     # Browse for anime folder was clicked
     def select_anime_path(self):
         dir = QFileDialog.getExistingDirectory(
-            None, "Choose Anime Path", "", QFileDialog.ShowDirsOnly # type: ignore
+            None, "Choose Anime Path", "", QFileDialog.ShowDirsOnly  # type: ignore
         )
 
         self.settings_window.AnimeFolderLineEdit.setText(dir)
@@ -330,7 +331,9 @@ class SignalConnector:
         )
 
     # Update all animes from anilist
-    def handle_anime_updates(self, animes: List[AnimeCollection]):
+    def handle_anime_updates(self):
+        animes = list(self.window.app.animes.values())
+
         # First, handle any animes in the tables but not in the list of animes
         for table in self.window.tables:
             # Reverse through the range, so that removal of rows
@@ -374,10 +377,6 @@ class SignalConnector:
         self.window.anime_window.AnimeUpdateSuccess.setVisible(
             not self.window.anime_window.AnimeUpdateSuccess.isVisible()
         )
-
-    # Files were refreshed, update anime tooltip info
-    def reload_anime_eps(self):
-        self.handle_anime_updates(list(self.window.app.animes.values()))
 
     # Anime settings submit button was clicked
     def update_anime_from_settings(self, anime: AnimeCollection):
@@ -472,7 +471,7 @@ class SignalConnector:
                     r = int(r)
 
                 item = LinkWidgetItem(result[len(result) - 1])
-                item.setData(Qt.DisplayRole, r) # type: ignore
+                item.setData(Qt.DisplayRole, r)  # type: ignore
                 item.setToolTip(result[i])
                 nyaa.setItem(nyaa.rowCount() - 1, i, item)
 
@@ -545,7 +544,7 @@ class SignalConnector:
 
             # Create our custom anime widget item
             item = AnimeWidgetItem(anime)
-            item.setData(Qt.DisplayRole, piece) # type: ignore
+            item.setData(Qt.DisplayRole, piece)  # type: ignore
             item.setToolTip(str(piece))
             table.setItem(row_pos, index, item)
 
@@ -564,7 +563,7 @@ class SignalConnector:
         bar.setValue(anime.progress)
         if anime.episode_count:
             table.item(row, 0).setData(
-                Qt.UserRole, anime.progress / anime.episode_count # type: ignore
+                Qt.UserRole, anime.progress / anime.episode_count  # type: ignore
             )
 
         if missing := self.window.app.missing_eps(anime):
@@ -587,7 +586,7 @@ class SignalConnector:
             if piece.isdigit():
                 piece = int(piece)
 
-            table.item(row, index).setData(Qt.DisplayRole, piece) # type: ignore
+            table.item(row, index).setData(Qt.DisplayRole, piece)  # type: ignore
             table.item(row, index).setToolTip(str(piece))
 
     # Column was resized in a table

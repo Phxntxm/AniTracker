@@ -42,11 +42,9 @@ ffprobe_cmd = "ffprobe"
 
 if hasattr(sys, "_MEIPASS"):
     if sys.platform.startswith("win32"):
-        ffprobe_cmd = f"{sys._MEIPASS}/ffprobe.exe"
+        ffprobe_cmd = f"{sys._MEIPASS}/ffprobe.exe" # type: ignore
     elif sys.platform.startswith("linux"):
-        ffprobe_cmd = f"{sys._MEIPASS}/ffprobe"
-
-    print(ffprobe_cmd)
+        ffprobe_cmd = f"{sys._MEIPASS}/ffprobe" # type: ignore
 
 @dataclass
 class Anime:

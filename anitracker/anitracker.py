@@ -83,7 +83,7 @@ class AniTracker:
 
     @property
     def animes(self) -> Dict[int, AnimeCollection]:
-        return self._animes
+        return self._animes.copy()
 
     def missing_eps(self, anime: AnimeCollection) -> str:
         have = [ep.episode_number for ep in self.get_episodes(anime)]
@@ -107,6 +107,9 @@ class AniTracker:
                         return anime
 
         return None
+
+    def remove_anime(self, id: int):
+        del self._animes[id]
 
     def refresh_from_anilist(self):
         # First get all the media

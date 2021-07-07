@@ -102,6 +102,7 @@ class MainWindow(QMainWindow):
         self.update_checker.setTerminationEnabled(True)
 
         # Start a few things in the background
+        self._update_anime_files_loop.start()
         self.anilist_connector.start()
         self.status_update_worker.start()
 
@@ -204,8 +205,8 @@ class MainWindow(QMainWindow):
         self.update_row_signal.connect(self.signals.update_row)  # type: ignore
         self.filter_anime.textChanged.connect(self.signals.filter_row)  # type: ignore
         self.status_update_worker.update.connect(self.signals.update_status)  # type: ignore
-        self.update_worker.reload_anime_eps.connect(self.signals.reload_anime_eps)  # type: ignore
-        self._update_anime_files_loop.reload_anime_eps.connect(self.signals.reload_anime_eps)  # type: ignore
+        self.update_worker.reload_anime_eps.connect(self.signals.handle_anime_updates)  # type: ignore
+        self._update_anime_files_loop.reload_anime_eps.connect(self.signals.handle_anime_updates)  # type: ignore
         self.update_ui_signal.connect(self.signals.handle_ui_update)  # type: ignore
         self.anime_updater.handle_anime_updates.connect(self.signals.handle_anime_updates)  # type: ignore
         self.update_success.toggle.connect(self.signals.toggle_success)  # type: ignore

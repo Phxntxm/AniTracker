@@ -42,7 +42,7 @@ class PlayEpisode(QThread):
         self._episode = episode_number
         self._window = window
 
-    @Slot()
+    @Slot()  # type: ignore
     def run(self):
         try:
             if self._window.app.play_episode(self._anime, self._episode):
@@ -59,14 +59,14 @@ class UpdateAnimeEpisodes(QThread):
 
         self._window = window
 
-    @Slot()
+    @Slot()  # type: ignore
     def run(self):
         try:
             status = StatusHelper("Checking anime folder...")
             self._window.statuses.append(status)
             self._window.app._refresh_anime_folder()
             self._window.statuses.remove(status)
-            self.reload_anime_eps.emit()
+            self.reload_anime_eps.emit()  # type: ignore
         except:
             traceback.print_exc()
 
@@ -79,7 +79,7 @@ class UpdateAnimeEpisodesLoop(QThread):
 
         self._window = window
 
-    @Slot()
+    @Slot()  # type: ignore
     def run(self):
         try:
             while True:
@@ -87,7 +87,7 @@ class UpdateAnimeEpisodesLoop(QThread):
                 self._window.statuses.append(status)
                 self._window.app._refresh_anime_folder()
                 self._window.statuses.remove(status)
-                self.reload_anime_eps.emit()
+                self.reload_anime_eps.emit()  # type: ignore
                 sleep(120)
         except:
             traceback.print_exc()
@@ -95,14 +95,13 @@ class UpdateAnimeEpisodesLoop(QThread):
 
 class ConnectToAnilist(QThread):
     update_label = Signal(str)
-    first_run = True
 
     def __init__(self, window: MainWindow) -> None:
         super().__init__()
 
         self._window = window
 
-    @Slot()
+    @Slot()  # type: ignore
     def run(self):
         try:
             status = StatusHelper("Connecting to anilist...")
@@ -110,31 +109,28 @@ class ConnectToAnilist(QThread):
             # Login with anilist
             self._window.app._anilist.verify()
 
-            if self._window.app._anilist.verify:
-                self.update_label.emit(
+            if self._window.app._anilist.authenticated:
+                self.update_label.emit(  # type: ignore
                     f"Connected account: {self._window.app._anilist.name}"
                 )
+                # If we authenticated at all, refresh animes
+                self._window.anime_updater.start()
 
-                if self.first_run:
-                    self.first_run = False
-                    self._window.anime_updater.start()
-                    self._window._update_anime_files_loop.start()
             self._window.statuses.remove(status)
         except:
             traceback.print_exc()
 
 
 class UpdateAnimeLists(QThread):
-    handle_anime_updates = Signal(list)
+    handle_anime_updates = Signal()
     clear_table_signal = Signal()
-    first_run = True
 
     def __init__(self, window: MainWindow) -> None:
         super().__init__()
 
         self._window = window
 
-    @Slot()
+    @Slot()  # type: ignore
     def run(self):
         try:
             # Load the anilist tables
@@ -144,9 +140,7 @@ class UpdateAnimeLists(QThread):
                 # First refresh from anilist
                 self._window.app.refresh_from_anilist()
 
-                if self.first_run:
-                    self.first_run = False
-                    self._window.update_worker.start()
+                self.handle_anime_updates.emit()  # type: ignore
 
                 self._window.statuses.remove(status)
         except:
@@ -159,12 +153,12 @@ class AnimeUpdateSuccess(QThread):
     def __init__(self) -> None:
         super().__init__()
 
-    @Slot()
+    @Slot()  # type: ignore
     def run(self):
         try:
-            self.toggle.emit()
+            self.toggle.emit()  # type: ignore
             sleep(2)
-            self.toggle.emit()
+            self.toggle.emit()  # type: ignore
         except:
             traceback.print_exc()
 
@@ -176,11 +170,11 @@ class StatusLabelUpdater(QThread):
         super().__init__()
         self._window = window
 
-    @Slot()
+    @Slot()  # type: ignore
     def run(self):
         try:
             while True:
-                self.update.emit()
+                self.update.emit()  # type: ignore
                 sleep(0.1)
         except:
             traceback.print_exc()
@@ -219,12 +213,15 @@ class UpdateChecker(QThread):
             elif sys.platform.startswith("win32"):
                 os.rename(application_path, f"{application_path}.bak")
                 exe_path = f"{application_path}.bak"
+            else:
+                yield "Unsupported platform"
+                return
 
             yield "Download finished! Restarting in 3 seconds"
             sleep(3)
             os.execv(exe_path, sys.argv)
 
-    @Slot()
+    @Slot()  # type: ignore
     def run(self):
         try:
             # First make sure we can actually update this
@@ -284,7 +281,7 @@ class EditAnime(QThread):
 
         self._params = kwargs
 
-    @Slot()
+    @Slot()  # type: ignore
     def run(self):
         try:
             status = StatusHelper("Updating anime lists")
@@ -293,56 +290,6 @@ class EditAnime(QThread):
             self._window.statuses.remove(status)
         except:
             traceback.print_exc()
-
-
-class UpdateTablesForAnimes(QThread):
-    def __init__(self, window: MainWindow, animes: List[AnimeCollection]):
-        self._window = window
-        self._animes = animes
-
-    @Slot()
-    def run(self):
-        # First, handle any animes in the tables but not in the list of animes
-        for table in self._window.tables:
-            # Reverse through the range, so that removal of rows
-            # doesn't mess up what we're looking at
-            for row in range(table.rowCount() - 1, -1, -1):
-                anime: AnimeCollection = table.item(row, 0).anime  # type: ignore
-
-                # If the anime is not in the list, remove it from the table
-                if anime not in self._animes:
-                    self._window.update_ui_signal.emit(
-                        functools.partial(table.removeRow, row)
-                    )
-                # Otherwise if this table doesn't match the anime's status, remove it
-                elif self._window.get_table(anime.user_status) != table:
-                    self._window.update_ui_signal.emit(
-                        functools.partial(table.removeRow, row)
-                    )
-
-        # Now loop through the animes and handle all the updates
-        for anime in self._animes:
-            found = False
-            table = self._window.get_table(anime.user_status)
-
-            # Loop through every row in the table it should be in
-            for row in range(table.rowCount()):
-                # Found it
-                if table.item(row, 0).anime == anime:
-                    found = True
-                    self._window.update_row_signal.emit(table, row, anime)  # type: ignore
-
-            # If we didn't find it, then insert it
-            if not found:
-                self._window.insert_row_signal.emit(table, anime)  # type: ignore
-
-        # Make sure things are sorted properly
-        for table in self._window.tables:
-            if table.isSortingEnabled():
-                # This will immediately trigger a sort based on the sort option
-                # selected, so we just set it to True again, since as far as I can
-                # tell there's no way to GET the current sort option
-                table.setSortingEnabled(True)
 
 
 class StatusHelper:
