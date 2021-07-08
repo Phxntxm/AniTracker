@@ -87,7 +87,7 @@ class AniTracker:
 
     def missing_eps(self, anime: AnimeCollection) -> str:
         have = [ep.episode_number for ep in self.get_episodes(anime)]
-        missing = [f"{n}" for n in range(1, anime.episode_count) if n not in have]
+        missing = [f"{n}" for n in range(1, anime.episode_count + 1) if n not in have]
 
         return ", ".join(missing)
 
