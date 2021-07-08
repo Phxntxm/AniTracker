@@ -185,8 +185,7 @@ class AniTracker:
                 self._play_episode_default_linux(episode)
                 return False
         elif sys.platform.startswith("win32"):
-            self._play_episode_default_windows(episode)
-            return False
+            return self._play_episode_mpv(episode, subtitle=subtitle)
 
         return False
 
@@ -196,8 +195,7 @@ class AniTracker:
         subprocess.run(cmd, capture_output=True)
 
     def _play_episode_default_windows(self, episode: AnimeFile):
-        f = episode.file.replace("/", "\\")
-        subprocess.run(["start", f'"{f}"'])
+        os.startfile(episode.file)
 
     def _play_episode_mpv(
         self, episode: AnimeFile, *, subtitle: Optional[SubtitleTrack] = None

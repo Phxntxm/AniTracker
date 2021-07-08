@@ -641,7 +641,7 @@ class SignalConnector:
             bar.setToolTip("Found all episodes")
 
         # Now loop through the normal headers
-        for index, attr in enumerate(self.window._header_labels, start=1):
+        for index, attr in enumerate(self.window._header_labels):
             piece = getattr(anime, attr, "")
 
             # Skip the progress, we handled that already
