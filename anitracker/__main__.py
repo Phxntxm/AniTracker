@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
         # A dict of the headers to whether they're enabled by default
         # TODO: Figure out how to make the header not go away when all columns are hidden
         self._header_labels = {
+            "progress": True,
             "id": False,
             "user_status": False,
             "score": False,
@@ -107,7 +108,7 @@ class MainWindow(QMainWindow):
         self.status_update_worker.start()
 
     def setup_tables(self):
-        def default_table_setup(_table: QTableWidget, skip_user_settings: bool = False):
+        def default_table_setup(_table: QTableWidget, _headers: Dict):
             # Create a menu per table
             menu = _table.menu = QMenu(self.ui.AnimeListTab)  # type: ignore
             menu.setStyleSheet("QMenu::item:selected {background-color: #007fd4}")
@@ -133,21 +134,7 @@ class MainWindow(QMainWindow):
 
             headers = []
 
-            if not skip_user_settings:
-                headers.append("Progress")
-
-            for title, enabled in self.get_headers(_table).items():
-                # Skip if this is a user setting
-                if skip_user_settings and title in [
-                    "user_status",
-                    "score",
-                    "progress",
-                    "repeat",
-                    "updated_at",
-                    "start_date",
-                    "end_date",
-                ]:
-                    continue
+            for title, enabled in _headers.items():
                 # Get the pretty title for the action menu
                 pretty_title = title.lower().replace("_", " ").title()
                 headers.append(pretty_title)
@@ -157,18 +144,17 @@ class MainWindow(QMainWindow):
                 action.setCheckable(True)
                 # Add column to _table
                 _table.insertColumn(_table.columnCount())
+                index = _table.columnCount() - 1
                 # If it's enabled, set action as true and don't hide row
                 if enabled:
                     action.setChecked(True)
-                    _table.setColumnHidden(_table.columnCount() - 1, False)
+                    _table.setColumnHidden(index, False)
                 else:
-                    _table.setColumnHidden(_table.columnCount() - 1, True)
+                    _table.setColumnHidden(index, True)
 
                 menu.addAction(action)
 
-            # This has to be done after due to the difference in the 0th column
-            # in some of the tables
-            for index in range(_table.columnCount()):
+                # Resize header
                 size = self.app._config.get_option(
                     str(index), section=_table.objectName()
                 )
@@ -178,27 +164,45 @@ class MainWindow(QMainWindow):
             # Setting headers has to come after
             _table.setHorizontalHeaderLabels(headers)
 
-        default_table_setup(self.ui.AnilistSearchResults, skip_user_settings=True)
+        user_settings = [
+            "user_status",
+            "score",
+            "progress",
+            "repeat",
+            "updated_at",
+            "start_date",
+            "end_date",
+        ]
+        _anilist_search_headers = {
+            k: v
+            for k, v in self.get_headers(self.ui.AnilistSearchResults).items()
+            if k not in user_settings
+        }
+
+        default_table_setup(self.ui.AnilistSearchResults, _anilist_search_headers)
         # https://bugreports.qt.io/browse/QTBUG-12889
         # Asanine
         self.ui.AnilistSearchResults.horizontalHeader().setVisible(True)
         self.ui.NyaaSearchResults.horizontalHeader().setVisible(True)
 
         for table in self.tables:
-            # Insert the column for progress first
-            table.insertColumn(0)
-            table.setColumnWidth(0, 200)
-
-            default_table_setup(table)
+            headers = self.get_headers(table)
+            default_table_setup(table, headers)
 
         # Nyaa search setup is a little different
-        headers = ["Title", "Size", "Date", "Seeders", "Leechers", "Downloads"]
         nyaa = self.ui.NyaaSearchResults
-        for _ in headers:
-            nyaa.insertColumn(nyaa.columnCount())
-
-        nyaa.setHorizontalHeaderLabels(headers)
-        nyaa.viewport().installEventFilter(MouseFilter(nyaa, self))
+        headers = self.get_headers(
+            nyaa,
+            _headers={
+                "title": True,
+                "size": True,
+                "date": True,
+                "seeders": True,
+                "leechers": True,
+                "downloads": True,
+            },
+        )
+        default_table_setup(nyaa, headers)
 
     def connect_signals(self):
         self.insert_row_signal.connect(self.signals.insert_row)  # type: ignore
@@ -264,12 +268,20 @@ class MainWindow(QMainWindow):
 
         raise TypeError(f"Cannot find table for {status}")
 
-    def get_headers(self, table: QTableWidget) -> Dict[str, bool]:
+    def get_headers(
+        self,
+        table: QTableWidget,
+        *,
+        _headers: Optional[Dict[str, bool]] = None,
+    ) -> Dict[str, bool]:
         """Returns the headers specified for this table"""
         headers: Dict[str, bool] = {}
 
+        if _headers is None:
+            _headers = self._header_labels
+
         # Loop through defaults
-        for header, default in self._header_labels.items():
+        for header, default in _headers.items():
             # Get override from config
             opt = self.app._config.get_option(header, section=table.objectName())
             if opt is None:

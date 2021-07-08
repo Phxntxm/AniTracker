@@ -186,6 +186,8 @@ class SignalConnector:
 
     # Header context menu option selected
     def header_changed(self, table: QTableWidget, _action: QAction):
+        all_hidden = True
+
         # Loop through each column
         for index in range(table.columnCount()):
             # Get the text for this header
@@ -199,7 +201,33 @@ class SignalConnector:
                     _action.isChecked(),
                     section=table.objectName(),
                 )
-                return
+                # For our all_hidden check
+                if _action.isChecked():
+                    all_hidden = False
+            elif not table.isColumnHidden(index):
+                all_hidden = False
+
+        # Check if there are no headers shown for this table, if there are
+        # show the title/preferred title
+        if all_hidden:
+            for index in range(table.columnCount()):
+                text = table.horizontalHeaderItem(index).text()
+                if text == "Title" or text == "Preferred Title":
+                    # Found our title column, set it as not hidden
+                    table.setColumnHidden(index, False)
+                    # Now set the action as checked
+                    for action in table.menu.actions():  # type: ignore
+                        if action.text() == text:
+                            action.setChecked(True)
+                            # Since this was updated here, it needs to be
+                            # updated in the config too
+                            self.window.app._config.set_option(
+                                text.lower().replace(" ", "_"),
+                                True,
+                                section=table.objectName(),
+                            )
+                            break
+                    break
 
     # Header was right clicked
     def open_header_menu(self, table: QTableWidget, point: QPoint):
@@ -436,7 +464,9 @@ class SignalConnector:
 
     # Filter anime was typed in
     def filter_row(self, text: str):
-        for table in self.window.tables:
+        for table in self.window.tables + [
+            self.window.ui.AnilistSearchResults,
+        ]:
             for row in range(table.rowCount()):
                 anime = cast(AnimeWidgetItem, table.item(row, 0)).anime
                 if (
@@ -447,6 +477,14 @@ class SignalConnector:
                     table.setRowHidden(row, False)
                 else:
                     table.setRowHidden(row, True)
+        # Handle nyaa separate since it's not attached to an anime
+        table = self.window.ui.NyaaSearchResults
+        for row in range(table.rowCount()):
+            title = table.item(row, 0).text()
+            if text.lower() in title.lower():
+                table.setRowHidden(row, False)
+            else:
+                table.setRowHidden(row, True)
 
     # Status update needs to be triggered
     def update_status(self):
@@ -474,6 +512,7 @@ class SignalConnector:
 
     # Search anilist
     def search_anilist(self):
+        self.window.ui.AnilistSearchResults.setRowCount(0)
         self.anilist_search_task = SearchAnilist(
             self.window, self.window.ui.AnilistSearchLineEdit.text()
         )
