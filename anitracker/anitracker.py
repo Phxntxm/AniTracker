@@ -200,23 +200,38 @@ class AniTracker:
     def _play_episode_mpv(
         self, episode: AnimeFile, *, subtitle: Optional[SubtitleTrack] = None
     ) -> bool:
-        filename = episode.file.replace("'", r"\'")
+        # Setup the command
+        cmd = []
+        is_lin = sys.platform.startswith("linux")
+        is_win = sys.platform.startswith("win32")
 
-        if subtitle is not None:
-            if subtitle.file is not None:
-                fmt = r"mpv --fs --sub-file='{}' --term-status-msg=':${{percent-pos}}:' '{}'".format(
-                    subtitle.file, filename
-                )
-            else:
-                fmt = r"mpv --fs --sid={} --term-status-msg=':${{percent-pos}}:' '{}'".format(
-                    subtitle.id, filename
-                )
+        # ATM this doesn't support more than just windows or linux
+        if not (is_lin or is_win):
+            return False
+
+        # Add the mpv command
+        if hasattr(sys, "_MEIPASS"):
+            cmd.extend(shlex.split(f"{sys._MEIPASS}/mpv", posix=False))
         else:
-            fmt = r"mpv --fs --term-status-msg=':${{percent-pos}}:' '{}'".format(
-                filename
-            )
-        cmd = self._escape_linux_command(fmt)
+            cmd += ["mpv"]
+        
+        # Add the normal flags
+        cmd.extend(["--fs", "--term-status-msg=':${percent-pos}:'"])
 
+        # Add subtitles
+        if subtitle is not None and subtitle.file is not None:
+            if is_lin:
+                cmd.append(f"--sub-file='{subtitle.file}'")
+            elif is_win:
+                cmd.append(f"--sub-file=\"{subtitle.file}\"")
+        elif subtitle is not None:
+            cmd.append(f"--sid={subtitle.id}")
+        # add the filename
+        if is_win:
+            cmd.append(episode.file)
+        elif is_lin:
+            cmd.append(f"'{episode.file}'")
+        
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         between_colon: bool = False
