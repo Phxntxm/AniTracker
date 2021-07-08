@@ -38,13 +38,15 @@ class AnimeStatus(Enum):
     CANCELLED = auto()
     HIATUS = auto()
 
+
 ffprobe_cmd = "ffprobe"
 
 if hasattr(sys, "_MEIPASS"):
     if sys.platform.startswith("win32"):
-        ffprobe_cmd = f"{sys._MEIPASS}/ffprobe.exe" # type: ignore
+        ffprobe_cmd = f"{sys._MEIPASS}/ffprobe.exe"  # type: ignore
     elif sys.platform.startswith("linux"):
-        ffprobe_cmd = f"{sys._MEIPASS}/ffprobe" # type: ignore
+        ffprobe_cmd = f"{sys._MEIPASS}/ffprobe"  # type: ignore
+
 
 @dataclass
 class Anime:
@@ -367,15 +369,26 @@ class AnimeFile:
         # TODO: Probably create my own parser, this fails on e.g.
         # [Samir755] Violet Evergarden - 05- You Write Letters That Bring People Together.mkv
         # (No space after the episode number)
+        episode = data["episode_number"]
 
-        inst = cls()
-        inst.title = data["anime_title"]
-        inst.episode_title = data.get("episode_title", "Unknown")
-        inst.episode_number = int(data["episode_number"])
-        inst.file = data["file_name"]
-        inst.subtitles = []
+        def ret_file(_episode: str):
+            inst = cls()
+            inst.title = data["anime_title"]
+            inst.episode_title = data.get("episode_title", "Unknown")
+            inst.file = data["file_name"]
+            inst.episode_number = int(_episode)
+            inst.subtitles = []
 
-        return inst
+            return inst
+
+        # We want to return a list of files, one for each episode
+        if isinstance(episode, list):
+            results = []
+
+            for ep in episode:
+                results.append(ret_file(ep))
+        elif isinstance(episode, str):
+            return ret_file(episode)
 
     def _mediainfo(self) -> Dict:
         try:
