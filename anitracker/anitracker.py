@@ -213,7 +213,7 @@ class AniTracker:
         if hasattr(sys, "_MEIPASS"):
             cmd.extend(shlex.split(f"{sys._MEIPASS}/mpv", posix=False))
         else:
-            cmd += ["mpv"]
+            cmd.append("mpv")
         
         # Add the normal flags
         cmd.extend(["--fs", "--term-status-msg=':${percent-pos}:'"])
