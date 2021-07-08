@@ -25,6 +25,8 @@ class Ui_About(object):
         self.label.setGeometry(QRect(10, 10, 442, 241))
         self.label.setStyleSheet(u"")
         self.label.setAlignment(Qt.AlignCenter)
+        self.label.setWordWrap(True)
+        self.label.setOpenExternalLinks(True)
         self.label.setTextInteractionFlags(Qt.TextBrowserInteraction)
         self.VersionLabel = QLabel(About)
         self.VersionLabel.setObjectName(u"VersionLabel")
@@ -38,7 +40,7 @@ class Ui_About(object):
 
     def retranslateUi(self, About):
         About.setWindowTitle(QCoreApplication.translate("About", u"About AniTracker", None))
-        self.label.setText(QCoreApplication.translate("About", u"<html><head/><body><p>AniTracker is a tool used to facilitate syncing of data<br/>between anime services, as well as tracking and playing files</p><p>for your anime. Currently it is pretty barebones, but more and more</p><p>features are planned as time goes on.</p><p><br/></p><p>Icons from: <a href=\"https://icons8.com/\"><span style=\" text-decoration: underline; color:#0000ff;\">https://icons8.com/</span></a></p></body></html>", None))
+        self.label.setText(QCoreApplication.translate("About", u"<html><head/><body><p>AniTracker is a tool used to facilitate syncing of data<br/>between anime services, as well as tracking and playing files for your anime. Currently it is pretty barebones, but more and more features are planned as time goes on.</p><p><br/></p><p>Icons from: <a href=\"https://icons8.com/\"><span style=\" text-decoration: underline; color:#0000ff;\">https://icons8.com/</span></a></p></body></html>", None))
         self.VersionLabel.setText(QCoreApplication.translate("About", u"Version: 1", None))
     # retranslateUi
 

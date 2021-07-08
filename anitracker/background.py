@@ -29,6 +29,8 @@ __all__ = (
     "UpdateChecker",
     "EditAnime",
     "StatusHelper",
+    "SearchNyaa",
+    "SearchAnilist",
 )
 
 
@@ -290,6 +292,41 @@ class EditAnime(QThread):
             self._window.statuses.remove(status)
         except:
             traceback.print_exc()
+
+
+class SearchNyaa(QThread):
+    nyaa_results = Signal(list)
+
+    def __init__(self, window: MainWindow, query: str) -> None:
+        super().__init__()
+        self._window = window
+        self._query = query
+
+    @Slot()  # type: ignore
+    def run(self):
+        status = StatusHelper("Searching nyaa.si")
+        self._window.statuses.append(status)
+        results = list(self._window.app.search_nyaa(self._query))
+        self.nyaa_results.emit(results)  # type: ignore
+        self._window.statuses.remove(status)
+
+
+class SearchAnilist(QThread):
+    def __init__(self, window: MainWindow, query: str) -> None:
+        super().__init__()
+        self._window = window
+        self._query = query
+
+    @Slot()  # type: ignore
+    def run(self):
+        status = StatusHelper("Searching anilist")
+        self._window.statuses.append(status)
+        results = self._window.app._anilist.search_anime(self._query)
+        for result in results:
+            self._window.insert_row_signal.emit(  # type: ignore
+                self._window.ui.AnilistSearchResults, result
+            )
+        self._window.statuses.remove(status)
 
 
 class StatusHelper:

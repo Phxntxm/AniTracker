@@ -192,7 +192,7 @@ class MainWindow(QMainWindow):
             default_table_setup(table)
 
         # Nyaa search setup is a little different
-        headers = ["title", "size", "date", "seeders", "leechers", "downloads"]
+        headers = ["Title", "Size", "Date", "Seeders", "Leechers", "Downloads"]
         nyaa = self.ui.NyaaSearchResults
         for _ in headers:
             nyaa.insertColumn(nyaa.columnCount())
@@ -210,7 +210,7 @@ class MainWindow(QMainWindow):
         self.update_ui_signal.connect(self.signals.handle_ui_update)  # type: ignore
         self.anime_updater.handle_anime_updates.connect(self.signals.handle_anime_updates)  # type: ignore
         self.update_success.toggle.connect(self.signals.toggle_success)  # type: ignore
-        self.ui.AnilistSearchButton.clicked.connect(self.signals.search_anime)  # type: ignore
+        self.ui.AnilistSearchButton.clicked.connect(self.signals.search_anilist)  # type: ignore
         self.ui.NyaaSearchButton.clicked.connect(self.signals.search_nyaa)  # type: ignore
         self.ui.AnimeListChooser.currentRowChanged.connect(self.signals.change_page)  # type: ignore
         self.ui.actionSettings.triggered.connect(self.signals.open_settings)  # type: ignore

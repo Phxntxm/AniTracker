@@ -16,7 +16,7 @@ from PySide2.QtWidgets import *  # type: ignore
 from anitracker import __version__
 from anitracker.ui import Ui_About, Ui_Settings
 from anitracker.media import Anime, AnimeCollection, UserStatus
-from anitracker.background import PlayEpisode, EditAnime
+from anitracker.background import PlayEpisode, EditAnime, SearchAnilist, SearchNyaa
 
 if TYPE_CHECKING:
     from anitracker.__main__ import MainWindow
@@ -63,41 +63,55 @@ class MouseFilter(QObject):
         self._table = table
         self._playing_episode: Union[PlayEpisode, None] = None
 
+    def _open_link(self, item: LinkWidgetItem):
+        if sys.platform.startswith("linux"):
+            cmd = shlex.split(f"xdg-open '{item.link}'")
+            subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        elif sys.platform.startswith("win32"):
+            cmd = shlex.split(f"start '{item.link}'")
+            subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+
+    def mousebuttonrelease_middlebutton(
+        self,
+        window: MainWindow,
+        item: Union[AnimeWidgetItem, LinkWidgetItem],
+    ):
+        if isinstance(item, AnimeWidgetItem) and isinstance(
+            item.anime, AnimeCollection
+        ):
+            self._playing_episode = PlayEpisode(
+                item.anime, item.anime.progress + 1, window
+            )
+            self._playing_episode.start()
+        elif isinstance(item, LinkWidgetItem):
+            self._open_link(item)
+
+    def mousebuttondblclick_leftbutton(
+        self,
+        window: MainWindow,
+        item: Union[AnimeWidgetItem, LinkWidgetItem],
+    ):
+        if isinstance(item, AnimeWidgetItem):
+            window.open_anime_settings(item.anime)
+        elif isinstance(item, LinkWidgetItem):
+            self._open_link(item)
+
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         parent: MainWindow = self.parent()  # type: ignore
 
         if not isinstance(event, QMouseEvent):
-            return False
+            return super().eventFilter(watched, event)
 
         # Get the item at that position
         item = self._table.itemAt(event.pos())
 
-        if isinstance(item, AnimeWidgetItem):
-            # If we've pressed and released
-            if event.type() is QEvent.MouseButtonDblClick:
-                parent.open_anime_settings(item.anime)
+        t = event.type().name.decode("utf-8")  # type: ignore
+        b = event.button().name.decode("utf-8")  # type: ignore
 
-            if (
-                event.type() is QEvent.MouseButtonRelease
-                and event.button() is Qt.MiddleButton
-                and isinstance(item.anime, AnimeCollection)
-            ):
-                self._playing_episode = PlayEpisode(
-                    item.anime, item.anime.progress + 1, parent
-                )
-                self._playing_episode.start()
-        elif isinstance(item, LinkWidgetItem):
-            if event.type() is QEvent.MouseButtonDblClick:
-                if sys.platform.startswith("linux"):
-                    cmd = shlex.split(f"xdg-open '{item.link}'")
-                    subprocess.run(
-                        cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
-                    )
-                elif sys.platform.startswith("win32"):
-                    cmd = shlex.split(f"start '{item.link}'")
-                    subprocess.run(
-                        cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL
-                    )
+        func = getattr(self, f"{t.lower()}_{b.lower()}", None)
+
+        if callable(func):
+            func(parent, item)
 
         return super().eventFilter(watched, event)
 
@@ -228,6 +242,7 @@ class SignalConnector:
         folder = ""
         open_folder = None
         play_next = None
+        search_nyaa = None
         play_opts = {}
         next_ep = 0
 
@@ -266,8 +281,14 @@ class SignalConnector:
 
             if not play_opts:
                 play_menu.setEnabled(False)
+        elif isinstance(anime, Anime):
+            search_nyaa = menu.addAction("Search nyaa")
 
         action = menu.exec_(QCursor.pos())
+
+        # Don't do anything if the menu was cancelled
+        if action is None:
+            return
 
         if action == settings:
             self.window.open_anime_settings(anime)
@@ -285,6 +306,11 @@ class SignalConnector:
                 anime.edit(self.window.app._anilist, status=UserStatus.CURRENT)
         elif action == drop:
             anime.edit(self.window.app._anilist, status=UserStatus.DROPPED)
+        elif action == search_nyaa:
+            self.window.ui.AnimePages.setCurrentIndex(1)
+            self.window.ui.SearchTabs.setCurrentIndex(1)
+            self.window.ui.NyaaSearchLineEdit.setText(anime.english_title)
+            self.window.ui.NyaaSearchButton.click()
 
         # Anime Collection specific items
         if isinstance(anime, AnimeCollection):
@@ -307,12 +333,14 @@ class SignalConnector:
                 )
                 self._playing_episode.start()
 
-        # If we've edited an Anime class directly, that means we modifed our list from
-        # a non list-item... IE added it to it. So we need to refresh from anilist
-        if not isinstance(anime, AnimeCollection):
+        # If we've modified something with an anime, update it
+        if action in [
+            plan,
+            complete,
+            watch,
+            drop,
+        ]:
             self.window.anime_updater.start()
-
-        self.handle_anime_updates()
 
     # Browse for anime folder was clicked
     def select_anime_path(self):
@@ -445,24 +473,26 @@ class SignalConnector:
         self.window.ui.BannerViewer.setUrl(QUrl(item.anime.cover_image))
 
     # Search anilist
-    def search_anime(self):
-        results = self.window.app._anilist.search_anime(
-            self.window.ui.AnilistSearchLineEdit.text()
+    def search_anilist(self):
+        self.anilist_search_task = SearchAnilist(
+            self.window, self.window.ui.AnilistSearchLineEdit.text()
         )
+        self.anilist_search_task.start()
 
-        for result in results:
-            self.window.insert_row_signal.emit(  # type: ignore
-                self.window.ui.AnilistSearchResults, result
-            )
-
-    # Search nyaa.si
+    # Start nyaa search
     def search_nyaa(self):
+        self.nyaa_search_task = SearchNyaa(
+            self.window, self.window.ui.NyaaSearchLineEdit.text()
+        )
+        self.nyaa_search_task.start()
+        self.nyaa_search_task.nyaa_results.connect(self.nyaa_results)  # type: ignore
+
+    # Results from the nyaa search
+    def nyaa_results(self, results: List):
         nyaa = self.window.ui.NyaaSearchResults
         nyaa.setRowCount(0)
 
-        for result in self.window.app.search_nyaa(
-            self.window.ui.NyaaSearchLineEdit.text()
-        ):
+        for result in results:
             nyaa.insertRow(nyaa.rowCount())
 
             for i in range(nyaa.columnCount()):
