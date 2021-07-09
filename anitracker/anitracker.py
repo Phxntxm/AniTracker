@@ -195,7 +195,7 @@ class AniTracker:
         subprocess.run(cmd, capture_output=True)
 
     def _play_episode_default_windows(self, episode: AnimeFile):
-        os.startfile(episode.file)
+        os.startfile(episode.file)  # type: ignore
 
     def _play_episode_mpv(
         self, episode: AnimeFile, *, subtitle: Optional[SubtitleTrack] = None
@@ -211,10 +211,10 @@ class AniTracker:
 
         # Add the mpv command
         if hasattr(sys, "_MEIPASS"):
-            cmd.extend(shlex.split(f"{sys._MEIPASS}/mpv", posix=False))
+            cmd.extend(shlex.split(f"{sys._MEIPASS}/mpv", posix=False))  # type: ignore
         else:
             cmd.append("mpv")
-        
+
         # Add the normal flags
         cmd.extend(["--fs", "--term-status-msg=':${percent-pos}:'"])
 
@@ -223,7 +223,7 @@ class AniTracker:
             if is_lin:
                 cmd.append(f"--sub-file='{subtitle.file}'")
             elif is_win:
-                cmd.append(f"--sub-file=\"{subtitle.file}\"")
+                cmd.append(f'--sub-file="{subtitle.file}"')
         elif subtitle is not None:
             cmd.append(f"--sid={subtitle.id}")
         # add the filename
@@ -231,7 +231,7 @@ class AniTracker:
             cmd.append(episode.file)
         elif is_lin:
             cmd.append(f"'{episode.file}'")
-        
+
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         between_colon: bool = False
