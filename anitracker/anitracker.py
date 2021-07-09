@@ -202,11 +202,8 @@ class AniTracker:
     ) -> bool:
         # Setup the command
         cmd = []
-        is_lin = sys.platform.startswith("linux")
-        is_win = sys.platform.startswith("win32")
-
         # ATM this doesn't support more than just windows or linux
-        if not (is_lin or is_win):
+        if not sys.platform.startswith(("linux", "win32")):
             return False
 
         # Add the mpv command
@@ -220,17 +217,11 @@ class AniTracker:
 
         # Add subtitles
         if subtitle is not None and subtitle.file is not None:
-            if is_lin:
-                cmd.append(f"--sub-file='{subtitle.file}'")
-            elif is_win:
-                cmd.append(f'--sub-file="{subtitle.file}"')
+            cmd.append(f"--sub-file={subtitle.file}")
         elif subtitle is not None:
             cmd.append(f"--sid={subtitle.id}")
         # add the filename
-        if is_win:
-            cmd.append(episode.file)
-        elif is_lin:
-            cmd.append(f"'{episode.file}'")
+        cmd.append(episode.file)
 
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
