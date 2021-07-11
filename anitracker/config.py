@@ -39,6 +39,9 @@ class Config:
     def __setitem__(self, key: str, value: VALUE_TYPE):
         self.set_option(key, value)
 
+    def __delitem__(self, key: str):
+        self.remove_option(key)
+
     def set_option(self, key: str, value: VALUE_TYPE, *, section: str = "User"):
         if section not in self.__config:
             self.__config[section] = {}
@@ -50,3 +53,10 @@ class Config:
 
     def get_option(self, key: str, *, section: str = "User") -> VALUE_TYPE:
         return self.__config.get(section, {}).get(key)
+
+    def remove_option(self, key: str, *, section: str = "User"):
+        if section in self.__config and key in self.__config[section]:
+            del self.__config[section][key]
+
+            with open(self.__path.expanduser(), "w+") as f:
+                toml.dump(self.__config, f)

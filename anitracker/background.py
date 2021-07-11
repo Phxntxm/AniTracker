@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 
 __all__ = (
     "PlayEpisode",
+    "PlayEpisodes",
     "UpdateAnimeEpisodes",
     "UpdateAnimeEpisodesLoop",
     "ConnectToAnilist",
@@ -35,9 +36,7 @@ __all__ = (
 
 
 class PlayEpisode(QThread):
-    def __init__(
-        self, anime: AnimeCollection, episode_number: int, window: MainWindow
-    ) -> None:
+    def __init__(self, anime: AnimeCollection, episode_number: int, window: MainWindow) -> None:
         super().__init__()
 
         self._anime = anime
@@ -46,11 +45,20 @@ class PlayEpisode(QThread):
 
     @Slot()  # type: ignore
     def run(self):
-        try:
-            if self._window.app.play_episode(self._anime, self._episode):
-                self._window.anime_updater.start()
-        except:
-            traceback.print_exc()
+        self._window.app.play_episode(self._anime, self._episode, self._window)
+
+
+class PlayEpisodes(QThread):
+    def __init__(self, anime: AnimeCollection, starting_episode: int, window: MainWindow) -> None:
+        super().__init__()
+
+        self._anime = anime
+        self._episode = starting_episode
+        self._window = window
+
+    @Slot()  # type: ignore
+    def run(self):
+        self._window.app.play_episodes(self._anime, self._episode, self._window)
 
 
 class UpdateAnimeEpisodes(QThread):
@@ -112,9 +120,7 @@ class ConnectToAnilist(QThread):
             self._window.app._anilist.verify()
 
             if self._window.app._anilist.authenticated:
-                self.update_label.emit(  # type: ignore
-                    f"Connected account: {self._window.app._anilist.name}"
-                )
+                self.update_label.emit(f"Connected account: {self._window.app._anilist.name}")  # type: ignore
                 # If we authenticated at all, refresh animes
                 self._window.anime_updater.start()
 
@@ -235,9 +241,7 @@ class UpdateChecker(QThread):
             self._window.statuses.append(status)
 
             # Get latest version from URL
-            with requests.get(
-                "https://github.com/Phxntxm/AniTracker/releases/latest"
-            ) as r:
+            with requests.get("https://github.com/Phxntxm/AniTracker/releases/latest") as r:
                 version = r.url.rsplit("v")[1]
 
             from anitracker import __version__
@@ -274,9 +278,7 @@ class UpdateChecker(QThread):
 
 
 class EditAnime(QThread):
-    def __init__(
-        self, window: MainWindow, anime: Union[Anime, AnimeCollection], **kwargs
-    ):
+    def __init__(self, window: MainWindow, anime: Union[Anime, AnimeCollection], **kwargs):
         super().__init__()
         self._window = window
         self._anime = anime
@@ -323,9 +325,7 @@ class SearchAnilist(QThread):
         self._window.statuses.append(status)
         results = self._window.app._anilist.search_anime(self._query)
         for result in results:
-            self._window.insert_row_signal.emit(  # type: ignore
-                self._window.ui.AnilistSearchResults, result
-            )
+            self._window.insert_row_signal.emit(self._window.ui.AnilistSearchResults, result)  # type: ignore
         self._window.statuses.remove(status)
 
 

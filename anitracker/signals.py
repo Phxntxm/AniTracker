@@ -16,7 +16,13 @@ from PySide2.QtWidgets import *  # type: ignore
 from anitracker import __version__
 from anitracker.ui import Ui_About, Ui_Settings
 from anitracker.media import Anime, AnimeCollection, UserStatus
-from anitracker.background import PlayEpisode, EditAnime, SearchAnilist, SearchNyaa
+from anitracker.background import (
+    PlayEpisode,
+    EditAnime,
+    SearchAnilist,
+    SearchNyaa,
+    PlayEpisodes,
+)
 
 if TYPE_CHECKING:
     from anitracker.__main__ import MainWindow
@@ -61,7 +67,7 @@ class MouseFilter(QObject):
         super().__init__(parent=parent)
 
         self._table = table
-        self._playing_episode: Union[PlayEpisode, None] = None
+        self._playing_episode: Union[PlayEpisode, PlayEpisodes, None] = None
 
     def _open_link(self, item: LinkWidgetItem):
         if sys.platform.startswith("linux"):
@@ -79,7 +85,7 @@ class MouseFilter(QObject):
         if isinstance(item, AnimeWidgetItem) and isinstance(
             item.anime, AnimeCollection
         ):
-            self._playing_episode = PlayEpisode(
+            self._playing_episode = PlayEpisodes(
                 item.anime, item.anime.progress + 1, window
             )
             self._playing_episode.start()

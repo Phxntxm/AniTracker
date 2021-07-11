@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 import shlex
@@ -6,7 +8,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Generator, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Generator, Iterator, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import anitopy
 import requests
@@ -18,6 +20,9 @@ from anitracker.config import Config
 from anitracker.media import AnimeCollection, AnimeFile, UserStatus
 from anitracker.media.anime import SubtitleTrack
 from anitracker.sync import AniList
+
+if TYPE_CHECKING:
+    from anitracker.__main__ import MainWindow
 
 video_file_extensions = [
     "webm",
@@ -92,7 +97,11 @@ class AniTracker:
         return ", ".join(missing)
 
     def get_anime(
-        self, title: str = "", id: Union[int, None] = None
+        self,
+        title: str = "",
+        *,
+        id: Union[int, None] = None,
+        exact_name_match: bool = False,
     ) -> Union[AnimeCollection, None]:
         if id is not None:
             return self._animes[id]
@@ -103,7 +112,9 @@ class AniTracker:
                     anime.romaji_title,
                     anime.native_title,
                 ]:
-                    if fuzz.ratio(a_title, title) > 90:
+                    if exact_name_match and a_title.lower() == title.lower():
+                        return anime
+                    elif not exact_name_match and fuzz.ratio(a_title, title) > 90:
                         return anime
 
         return None
@@ -139,9 +150,7 @@ class AniTracker:
 
         return l
 
-    def get_episode(
-        self, anime: AnimeCollection, episode_num: int
-    ) -> Optional[AnimeFile]:
+    def get_episode(self, anime: AnimeCollection, episode_num: int) -> Optional[AnimeFile]:
         for title in anime.titles:
             episode = self._episodes.get((title, episode_num))
 
@@ -150,61 +159,47 @@ class AniTracker:
 
         return None
 
-    def play_episode(self, anime: AnimeCollection, episode_num: int) -> bool:
+    def play_episode(self, anime: AnimeCollection, episode_num: int, window: MainWindow):
         episode = self.get_episode(anime, episode_num)
 
         if episode is None:
-            return False
+            raise TypeError(f"Could not find episode {episode_num} for {anime}")
 
-        # Load the subtitles for this file before proceeding
-        episode.load_subtitles(self._standalone_subtitles)
+        # Start with just this episode
+        self._play_episodes([(episode, self._get_sub_for_episode(episode))], window)
 
+    def play_episodes(self, anime: AnimeCollection, starting_episode: int, window: MainWindow):
+        """Starts a playlist for an anime from this episode on"""
+        episodes: List[Tuple[AnimeFile, Optional[SubtitleTrack]]] = []
+
+        for index in range(starting_episode, anime.episode_count + 1):
+            episode = self.get_episode(anime, index)
+
+            if episode:
+                episode.load_subtitles(self._standalone_subtitles)
+                episodes.append((episode, self._get_sub_for_episode(episode)))
+
+        if episodes:
+            self._play_episodes(episodes, window)
+
+    def _get_sub_for_episode(self, episode: AnimeFile) -> Optional[SubtitleTrack]:
         for sub_track in episode.subtitles:
             if sub_track.language == self._config["subtitle"]:
                 if sub_track.is_songs_signs and self._config["skip_songs_signs"]:
                     continue
                 else:
-                    return self._play_episode(episode, subtitle=sub_track)
+                    return sub_track
 
-        # Next check if there ARE subtitles, if we couldn't find one that
-        # matches, but there is one... choose the first
+        # If we're here we didn't find one that matched, so just use the first one
         if episode.subtitles:
-            return self._play_episode(episode, subtitle=episode.subtitles[0])
+            return episode.subtitles[0]
 
-        # If we couldn't find a subtitle track, just start it
-        return self._play_episode(episode)
-
-    def _play_episode(
-        self, episode: AnimeFile, *, subtitle: Optional[SubtitleTrack] = None
-    ) -> bool:
-        if sys.platform.startswith("linux"):
-            # Has mpv
-            if subprocess.run(["which", "mpv"], capture_output=True).returncode == 0:
-                return self._play_episode_mpv(episode, subtitle=subtitle)
-            else:
-                self._play_episode_default_linux(episode)
-                return False
-        elif sys.platform.startswith("win32"):
-            return self._play_episode_mpv(episode, subtitle=subtitle)
-
-        return False
-
-    def _play_episode_default_linux(self, episode: AnimeFile):
-        fmt = f"xdg-open '{episode.file}'"
-        cmd = self._escape_linux_command(fmt)
-        subprocess.run(cmd, capture_output=True)
-
-    def _play_episode_default_windows(self, episode: AnimeFile):
-        os.startfile(episode.file)  # type: ignore
-
-    def _play_episode_mpv(
-        self, episode: AnimeFile, *, subtitle: Optional[SubtitleTrack] = None
-    ) -> bool:
+    def _get_mpv_command(self, episodes: List[Tuple[AnimeFile, Optional[SubtitleTrack]]]) -> List[str]:
         # Setup the command
         cmd = []
         # ATM this doesn't support more than just windows or linux
         if not sys.platform.startswith(("linux", "win32")):
-            return False
+            raise TypeError("Unsupported platform")
 
         # Add the mpv command
         if hasattr(sys, "_MEIPASS"):
@@ -213,52 +208,62 @@ class AniTracker:
             cmd.append("mpv")
 
         # Add the normal flags
-        cmd.extend(["--fs", "--term-status-msg=':${percent-pos}:'"])
+        cmd.extend(["--term-status-msg='Perc: ::${percent-pos}:: Pos: ::${playback-time}::'"])
+        coll = self.get_anime(episodes[0][0].title, exact_name_match=True)
 
-        # Add subtitles
-        if subtitle is not None and subtitle.file is not None:
-            cmd.append(f"--sub-file={subtitle.file}")
-        elif subtitle is not None:
-            cmd.append(f"--sid={subtitle.id}")
-        # add the filename
-        cmd.append(episode.file)
+        # Add the subtitle and file pairs
+        for ep, sub in episodes:
+            cmd.append(r"--{")
+            cmd.append(ep.file)
+            # Append subtitle track
+            if sub:
+                if sub.file:
+                    cmd.append(f"--sub-file={sub.file}")
+                else:
+                    cmd.append(f"--sid={sub.id}")
+            # Append progress if we can find it
+            if coll is not None:
+                pos = self._config.get_option(f"{coll.id}-{ep.episode_number}", section="EpisodeProgress")
+                if pos is not None:
+                    cmd.append(f"--start={pos}")
+            cmd.append(r"--}")
 
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return cmd
 
-        between_colon: bool = False
-        buffer: str = ""
+    def _play_episodes(self, episodes: List[Tuple[AnimeFile, Optional[SubtitleTrack]]], window: MainWindow):
+        cmd = self._get_mpv_command(episodes)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
         perc: int = 0
+        # Starting the first episode in the playlist of course
+        current_ep = episodes[0][0]
 
-        # This entire thing is for reading the status message, to determine
-        # percentage through the episode.... with that we determine if we want to
-        # set this episode as completed
+        # Parses the output of the MPV process to determine episode incrementing
         while proc.poll() is None:
-            if proc.stderr is not None:
-                c = proc.stderr.read(1).decode()
-                # Percentage looks like this :50:
-                # We need to mark beginning and end, because spaces/newlines
-                # when doing overwriting text in console is inconsistent
-                if c == ":":
-                    # If we're already between colons, this is the end
-                    if between_colon:
-                        # Turn the buffer into a number
-                        perc = int(buffer)
-                        # Reset the buffer
-                        buffer = ""
-                        between_colon = False
-                    # This is the start to a new buffer
+            if proc.stdout is not None:
+                stdout = proc.stdout.readline().decode().strip()
+                # Skip if blank
+                if not stdout:
+                    continue
+                if match := re.findall(r"Perc: ::(\d+):: Pos: ::(\d{2}:\d{2}:\d{2})::", stdout):
+                    # The way this works is strange because of the escaping used
+                    # to overwrite console. User friendly for viewing, not auto
+                    # parsing friendly. In this same stdout line there will be every
+                    # percentage update found during the watch, we want the latest (last)
+                    perc_str, pos = match[-1]  # type: ignore
+                    perc = int(perc_str)
+                    if perc > 80:
+                        self._increment_episode(current_ep, window)
+                        self._remove_position_for_episode(current_ep, pos)
                     else:
-                        between_colon = True
-                # If it's a digit add to the buffer
-                elif c.isdigit():
-                    buffer += c
-            time.sleep(0.1)
+                        self._save_position_for_episode(current_ep, pos)
+                elif stdout.startswith("Playing: "):
+                    # Now strip off the playing to get the filename
+                    stdout = stdout.split("Playing: ")[1]
+                    # Now find the file that matches the name
+                    current_ep = next(f[0] for f in episodes if f[0].file == stdout)
 
-        if perc > 80:
-            self._increment_episode(episode)
-            return True
-        else:
-            return False
+            time.sleep(0.05)
 
     def _escape_linux_command(self, string: str) -> List[str]:
         sh = shlex.shlex(string, posix=True)
@@ -266,7 +271,7 @@ class AniTracker:
         sh.whitespace_split = True
         return list(sh)
 
-    def _increment_episode(self, episode: AnimeFile):
+    def _increment_episode(self, episode: AnimeFile, window: MainWindow):
         coll = self.get_anime(episode.title)
         if coll is None:
             return
@@ -291,6 +296,19 @@ class AniTracker:
             vars["started_at"] = datetime.now().date()
 
         coll.edit(self._anilist, **vars)
+
+        # Now trigger an update of the app
+        window.anime_updater.start()
+
+    def _save_position_for_episode(self, episode: AnimeFile, position: str):
+        coll = self.get_anime(episode.title, exact_name_match=True)
+        if coll is not None:
+            self._config.set_option(f"{coll.id}-{episode.episode_number}", position, section="EpisodeProgress")
+
+    def _remove_position_for_episode(self, episode: AnimeFile, position: str):
+        coll = self.get_anime(episode.title, exact_name_match=True)
+        if coll is not None:
+            self._config.remove_option(f"{coll.id}-{episode.episode_number}", section="EpisodeProgress")
 
     def _refresh_anime_folder(self):
         try:
@@ -338,9 +356,7 @@ class AniTracker:
                         yield result
                 # Otherwise if it's a subtitle track, store it
                 if data.get("file_extension", "").lower() in subtitle_file_extensions:
-                    self._standalone_subtitles[
-                        (data["anime_title"], int(data["episode_number"]))
-                    ] = str(file)
+                    self._standalone_subtitles[(data["anime_title"], int(data["episode_number"]))] = str(file)
 
     def search_nyaa(self, query: str) -> Iterator[List]:
         url = "https://nyaa.si/"
@@ -362,7 +378,5 @@ class AniTracker:
                         children[5].text,
                         children[6].text,
                         children[7].text,
-                        children[2]
-                        .find("a", href=re.compile(r"^magnet:.*$"))
-                        .get("href"),
+                        children[2].find("a", href=re.compile(r"^magnet:.*$")).get("href"),
                     ]
