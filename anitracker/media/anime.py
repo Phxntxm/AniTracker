@@ -5,7 +5,7 @@ import sys
 from dataclasses import dataclass
 from datetime import date
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
 
 import ffmpeg
 
@@ -84,21 +84,9 @@ class Anime:
 
     @classmethod
     def from_data(cls, data: Dict) -> Anime:
-        start = (
-            date(**data["startDate"])
-            if all(value for value in data["startDate"].values())
-            else None
-        )
-        end = (
-            date(**data["endDate"])
-            if all(value for value in data["endDate"].values())
-            else None
-        )
-        studios = [
-            e["node"]["name"]
-            for e in data["studios"]["edges"]
-            if e["node"]["isAnimationStudio"]
-        ]
+        start = date(**data["startDate"]) if all(value for value in data["startDate"].values()) else None
+        end = date(**data["endDate"]) if all(value for value in data["endDate"].values()) else None
+        studios = [e["node"]["name"] for e in data["studios"]["edges"] if e["node"]["isAnimationStudio"]]
         if studios:
             studio = studios[0]
         else:
@@ -122,11 +110,7 @@ class Anime:
             data["averageScore"],
             f"{data['season']} {data['seasonYear']}",
             data["genres"],
-            [
-                (tag["name"], tag["rank"])
-                for tag in data["tags"]
-                if not tag["isMediaSpoiler"]
-            ],
+            [(tag["name"], tag["rank"]) for tag in data["tags"] if not tag["isMediaSpoiler"]],
             studio,
             data["coverImage"]["large"],
         )
@@ -157,30 +141,12 @@ class AnimeCollection(Anime):
     @classmethod
     def from_data(cls, data: Dict) -> AnimeCollection:
         start = (
-            date(**data["media"]["startDate"])
-            if all(value for value in data["media"]["startDate"].values())
-            else None
+            date(**data["media"]["startDate"]) if all(value for value in data["media"]["startDate"].values()) else None
         )
-        end = (
-            date(**data["media"]["endDate"])
-            if all(value for value in data["media"]["endDate"].values())
-            else None
-        )
-        user_start = (
-            date(**data["startedAt"])
-            if all(value for value in data["startedAt"].values())
-            else None
-        )
-        user_end = (
-            date(**data["completedAt"])
-            if all(value for value in data["completedAt"].values())
-            else None
-        )
-        studios = [
-            e["node"]["name"]
-            for e in data["media"]["studios"]["edges"]
-            if e["node"]["isAnimationStudio"]
-        ]
+        end = date(**data["media"]["endDate"]) if all(value for value in data["media"]["endDate"].values()) else None
+        user_start = date(**data["startedAt"]) if all(value for value in data["startedAt"].values()) else None
+        user_end = date(**data["completedAt"]) if all(value for value in data["completedAt"].values()) else None
+        studios = [e["node"]["name"] for e in data["media"]["studios"]["edges"] if e["node"]["isAnimationStudio"]]
         if studios:
             studio = studios[0]
         else:
@@ -203,11 +169,7 @@ class AnimeCollection(Anime):
             data["media"]["averageScore"],
             f"{data['media']['season']} {data['media']['seasonYear']}",
             data["media"]["genres"],
-            [
-                (tag["name"], tag["rank"])
-                for tag in data["media"]["tags"]
-                if not tag["isMediaSpoiler"]
-            ],
+            [(tag["name"], tag["rank"]) for tag in data["media"]["tags"] if not tag["isMediaSpoiler"]],
             studio,
             data["media"]["coverImage"]["large"],
             data["id"],
@@ -225,30 +187,12 @@ class AnimeCollection(Anime):
 
     def update_data(self, data: Dict):
         start = (
-            date(**data["media"]["startDate"])
-            if all(value for value in data["media"]["startDate"].values())
-            else None
+            date(**data["media"]["startDate"]) if all(value for value in data["media"]["startDate"].values()) else None
         )
-        end = (
-            date(**data["media"]["endDate"])
-            if all(value for value in data["media"]["endDate"].values())
-            else None
-        )
-        user_start = (
-            date(**data["startedAt"])
-            if all(value for value in data["startedAt"].values())
-            else None
-        )
-        user_end = (
-            date(**data["completedAt"])
-            if all(value for value in data["completedAt"].values())
-            else None
-        )
-        studios = [
-            e["node"]["name"]
-            for e in data["media"]["studios"]["edges"]
-            if e["node"]["isAnimationStudio"]
-        ]
+        end = date(**data["media"]["endDate"]) if all(value for value in data["media"]["endDate"].values()) else None
+        user_start = date(**data["startedAt"]) if all(value for value in data["startedAt"].values()) else None
+        user_end = date(**data["completedAt"]) if all(value for value in data["completedAt"].values()) else None
+        studios = [e["node"]["name"] for e in data["media"]["studios"]["edges"] if e["node"]["isAnimationStudio"]]
         if studios:
             studio = studios[0]
         else:
@@ -264,9 +208,7 @@ class AnimeCollection(Anime):
         self.score = data["score"]
         self.progress = data["progress"]
         self.repeat = data["repeat"]
-        self.updated_at = (
-            date.fromtimestamp(data["updatedAt"]) if data["updatedAt"] else None
-        )
+        self.updated_at = date.fromtimestamp(data["updatedAt"]) if data["updatedAt"] else None
         self.romaji_title = data["media"]["title"]["romaji"] or ""
         self.english_title = data["media"]["title"]["english"] or ""
         self.native_title = data["media"]["title"]["native"] or ""
@@ -282,11 +224,7 @@ class AnimeCollection(Anime):
         self.average_score = data["media"]["averageScore"]
         self.season = f"{data['media']['season']} {data['media']['seasonYear']}"
         self.genres = data["media"]["genres"]
-        self.tags = [
-            (tag["name"], tag["rank"])
-            for tag in data["media"]["tags"]
-            if not tag["isMediaSpoiler"]
-        ]
+        self.tags = [(tag["name"], tag["rank"]) for tag in data["media"]["tags"] if not tag["isMediaSpoiler"]]
         self.studio = studio
 
     def edit(
@@ -335,20 +273,10 @@ class AnimeCollection(Anime):
         self.notes = data["notes"]
         self.progress = data["progress"]
         self.repeat = data["repeat"]
-        self.updated_at = (
-            date.fromtimestamp(data["updatedAt"]) if data["updatedAt"] else None
-        )
+        self.updated_at = date.fromtimestamp(data["updatedAt"]) if data["updatedAt"] else None
 
-        user_start = (
-            date(**data["startedAt"])
-            if all(value for value in data["startedAt"].values())
-            else None
-        )
-        user_end = (
-            date(**data["completedAt"])
-            if all(value for value in data["completedAt"].values())
-            else None
-        )
+        user_start = date(**data["startedAt"]) if all(value for value in data["startedAt"].values()) else None
+        user_end = date(**data["completedAt"]) if all(value for value in data["completedAt"].values()) else None
 
         self.user_start_date = user_start
         self.user_end_date = user_end
@@ -365,13 +293,13 @@ class AnimeFile:
     subtitles: List[SubtitleTrack]
 
     @classmethod
-    def from_data(cls, data: Dict):
+    def from_data(cls, data: Dict) -> Union[List[AnimeFile], AnimeFile]:
         # TODO: Probably create my own parser, this fails on e.g.
         # [Samir755] Violet Evergarden - 05- You Write Letters That Bring People Together.mkv
         # (No space after the episode number)
         episode = data["episode_number"]
 
-        def ret_file(_episode: str):
+        def ret_file(_episode: str) -> AnimeFile:
             inst = cls()
             inst.title = data["anime_title"]
             inst.episode_title = data.get("episode_title", "Unknown")
@@ -387,8 +315,12 @@ class AnimeFile:
 
             for ep in episode:
                 results.append(ret_file(ep))
+
+            return results
         elif isinstance(episode, str):
             return ret_file(episode)
+        else:
+            raise TypeError(f"Could not parse data, expected list or string as episode, got {type(episode)}")
 
     def _mediainfo(self) -> Dict:
         try:
@@ -411,8 +343,8 @@ class AnimeFile:
                 sub_id += 1
 
         # Now find all the matching standalone ones
-        for key, track in standalone_subs.items():
-            if key[0] == self.title and key[1] == self.episode_number:
+        for (title, episode_number), track in standalone_subs.items():
+            if title == self.title and episode_number == self.episode_number:
                 self.subtitles.append(SubtitleTrack.from_file(track))
 
 

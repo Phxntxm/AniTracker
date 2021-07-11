@@ -203,11 +203,11 @@ class AniTracker:
 
         # Add the mpv command
         if hasattr(sys, "_MEIPASS"):
-            cmd.extend(shlex.split(f"{sys._MEIPASS}/mpv", posix=False))  # type: ignore
+            cmd.extend(shlex.split(f"{sys._MEIPASS}/mpv", posix=not sys.platform.startswith("win32")))  # type: ignore
         else:
             cmd.append("mpv")
 
-        # Add the normal flags
+        # Add the status message
         cmd.extend(["--term-status-msg='Perc: ::${percent-pos}:: Pos: ::${playback-time}::'"])
         coll = self.get_anime(episodes[0][0].title, exact_name_match=True)
 
@@ -235,7 +235,8 @@ class AniTracker:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         perc: int = 0
-        # Starting the first episode in the playlist of course
+        last_updated: float = time.monotonic()
+        # Start at the first episode in the playlist of course
         current_ep = episodes[0][0]
 
         # Parses the output of the MPV process to determine episode incrementing
@@ -253,8 +254,19 @@ class AniTracker:
                     perc_str, pos = match[-1]  # type: ignore
                     perc = int(perc_str)
                     if perc > 80:
-                        self._increment_episode(current_ep, window)
+                        now = time.monotonic()
+                        # To prevent race conditions, lets ensure we don't try to update
+                        # more than once in the span of 2 seconds. I've seen weird cases
+                        # where the output sends the percentage for the previous episode
+                        # at the exact time that it switches episodes. The order of my
+                        # checking of things should prevent that causing an issue, but I've
+                        # twice in hundreds of tests where the order seemed wrong. Realistically,
+                        # sounds like a probable bug in MPV but unrealistic to get fixed as it
+                        # will be low priority due to how niche it is
+                        if now - last_updated > 2:
+                            self._increment_episode(current_ep, window)
                         self._remove_position_for_episode(current_ep, pos)
+                        last_updated = now
                     else:
                         self._save_position_for_episode(current_ep, pos)
                 elif stdout.startswith("Playing: "):
