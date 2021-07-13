@@ -166,6 +166,7 @@ class AniTracker:
             raise TypeError(f"Could not find episode {episode_num} for {anime}")
 
         # Start with just this episode
+        episode.load_subtitles(self._standalone_subtitles)
         self._play_episodes([(episode, self._get_sub_for_episode(episode))], window)
 
     def play_episodes(self, anime: AnimeCollection, starting_episode: int, window: MainWindow):
@@ -183,16 +184,37 @@ class AniTracker:
             self._play_episodes(episodes, window)
 
     def _get_sub_for_episode(self, episode: AnimeFile) -> Optional[SubtitleTrack]:
-        for sub_track in episode.subtitles:
-            if sub_track.language == self._config["subtitle"]:
-                if sub_track.is_songs_signs and self._config["skip_songs_signs"]:
-                    continue
-                else:
-                    return sub_track
+        # If there's no subtitles, return None
+        if not episode.subtitles:
+            return None
+        # Create copy so that we can pop safely
+        subs = episode.subtitles.copy()
+        # Set up a priority system, starting with least to most priority
+        # Set the very first episode as the first priority
+        priority = subs.pop(0)
 
-        # If we're here we didn't find one that matched, so just use the first one
-        if episode.subtitles:
-            return episode.subtitles[0]
+        # Check if we want to skip songs_signs, and we have a songs/signs one
+        # if we do, we want to skip it as priority if there is a non-songs/signs
+        if self._config["skip_songs_signs"] and priority.is_songs_signs:
+            # Loop through all the leftover subs
+            for sub_track in subs:
+                # If we found one that's not signs/subs then set that as priority
+                if not sub_track.is_songs_signs:
+                    priority = sub_track
+                    subs.pop(subs.index(priority))
+                    break
+
+        # If this is also the language we want, then we don't need to
+        # do any more searching
+        if self._config["subtitle"] != priority.language:
+            # Means our priority set isn't the language we want, so try to find one
+            for sub_track in subs:
+                if sub_track.language == self._config["subtitle"]:
+                    priority = sub_track
+                    break
+
+        # Now return whatever our highest priority was
+        return priority
 
     def _get_mpv_command(self, episodes: List[Tuple[AnimeFile, Optional[SubtitleTrack]]]) -> List[str]:
         # Setup the command
