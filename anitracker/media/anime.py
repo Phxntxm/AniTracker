@@ -354,6 +354,9 @@ class SubtitleTrack:
     id: int
     file: Optional[str]
 
+    def __repr__(self) -> str:
+        return f"<SubtitleTrack lang='{self.language}' title='{self.title}'>"
+
     @classmethod
     def from_data(cls, data: Dict):
         inst = cls()
