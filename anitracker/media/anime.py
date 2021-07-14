@@ -297,7 +297,7 @@ class AnimeFile:
         # TODO: Probably create my own parser, this fails on e.g.
         # [Samir755] Violet Evergarden - 05- You Write Letters That Bring People Together.mkv
         # (No space after the episode number)
-        episode = data["episode_number"]
+        episode = data["episode"]
 
         def ret_file(_episode: str) -> AnimeFile:
             inst = cls()

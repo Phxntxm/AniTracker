@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import re
 import shlex
 import subprocess
@@ -10,7 +9,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Generator, Iterator, List, Optional, Tuple, Union, TYPE_CHECKING
 
-import anitopy
 import requests
 from bs4 import BeautifulSoup as bs
 from rapidfuzz import fuzz
@@ -20,6 +18,7 @@ from anitracker.config import Config
 from anitracker.media import AnimeCollection, AnimeFile, UserStatus
 from anitracker.media.anime import SubtitleTrack
 from anitracker.sync import AniList
+from anitracker.parser import parse
 
 if TYPE_CHECKING:
     from anitracker.__main__ import MainWindow
@@ -105,17 +104,16 @@ class AniTracker:
     ) -> Union[AnimeCollection, None]:
         if id is not None:
             return self._animes[id]
-        for _, anime in self.animes.items():
-            if title:
-                for a_title in [
-                    anime.english_title,
-                    anime.romaji_title,
-                    anime.native_title,
-                ]:
-                    if exact_name_match and a_title.lower() == title.lower():
-                        return anime
-                    elif not exact_name_match and fuzz.ratio(a_title, title) > 90:
-                        return anime
+        # If there's no title, just return None
+        if not title:
+            return None
+        # Set the ratio to 100 if this needs to be an exact match
+        ratio = 100 if exact_name_match else 95
+
+        # Now loop through all the names
+        for anime in self.animes.values():
+            if self._anime_is_title(anime, title, ratio=ratio):
+                return anime
 
         return None
 
@@ -144,17 +142,19 @@ class AniTracker:
     def get_episodes(self, anime: AnimeCollection) -> List[AnimeFile]:
         l = []
 
-        for key, value in self._episodes.items():
-            if key[0] in anime.titles:
-                l.append(value)
+        for (e_title, _), episode in self._episodes.items():
+            if self._anime_is_title(anime, e_title):
+                l.append(episode)
 
         return l
 
     def get_episode(self, anime: AnimeCollection, episode_num: int) -> Optional[AnimeFile]:
-        for title in anime.titles:
-            episode = self._episodes.get((title, episode_num))
-
-            if episode:
+        for (e_title, e_number), episode in self._episodes.items():
+            # Don't try to check if this isn't even the right episode number
+            if e_number != episode_num:
+                continue
+            # If it is the right episode number, check all the titles
+            if self._anime_is_title(anime, e_title):
                 return episode
 
         return None
@@ -182,6 +182,15 @@ class AniTracker:
 
         if episodes:
             self._play_episodes(episodes, window)
+
+    def _anime_is_title(self, anime: AnimeCollection, title: str, *, ratio: int = 95) -> bool:
+        """Compares an anime to a title, using a fuzzy match to try for best
+        possibility of matching. This also will check all the titles of an anime"""
+        for _title in anime.titles:
+            if fuzz.ratio(title, _title, processor=True) > ratio:
+                return True
+
+        return False
 
     def _get_sub_for_episode(self, episode: AnimeFile) -> Optional[SubtitleTrack]:
         # If there's no subtitles, return None
@@ -254,6 +263,7 @@ class AniTracker:
 
     def _play_episodes(self, episodes: List[Tuple[AnimeFile, Optional[SubtitleTrack]]], window: MainWindow):
         cmd = self._get_mpv_command(episodes)
+
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         perc: int = 0
@@ -364,33 +374,22 @@ class AniTracker:
             if file.is_dir():
                 continue
 
-            try:
-                data = anitopy.parse(file.name)
-            except ValueError:
+            data = parse(file)
+            # Skip if it doesn't match the format for anime
+            if not data["is_anime"] or "episode" not in data:
                 continue
-            else:
-                # If we couldn't parse it, continue
-                if data is None:
-                    continue
-                # Skip if it doesn't match the format for anime
-                if not (data.get("anime_title") and data.get("episode_number")):
-                    continue
 
-                # At this point it's probably a file we care about, whether that's a video or
-                # a subtitle track.. so throw the filename in there
-                data["file_name"] = str(file)
-
-                # If it's a video file just yield it
-                if data.get("file_extension", "").lower() in video_file_extensions:
-                    result = AnimeFile.from_data(data)
-                    if isinstance(result, list):
-                        for r in result:
-                            yield r
-                    elif isinstance(result, AnimeFile):
-                        yield result
-                # Otherwise if it's a subtitle track, store it
-                if data.get("file_extension", "").lower() in subtitle_file_extensions:
-                    self._standalone_subtitles[(data["anime_title"], int(data["episode_number"]))] = str(file)
+            # If it's a video file just yield it
+            if data.get("extension", "").lower() in video_file_extensions:
+                result = AnimeFile.from_data(data)
+                if isinstance(result, list):
+                    for r in result:
+                        yield r
+                elif isinstance(result, AnimeFile):
+                    yield result
+            # Otherwise if it's a subtitle track, store it
+            if data.get("extension", "").lower() in subtitle_file_extensions:
+                self._standalone_subtitles[(data["anime_title"], int(data["episode"]))] = str(file)
 
     def search_nyaa(self, query: str) -> Iterator[List]:
         url = "https://nyaa.si/"
