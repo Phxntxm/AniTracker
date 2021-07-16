@@ -246,7 +246,7 @@ class SignalConnector:
 
     def open_anime_context_menu(self, table: QTableWidget, _: QPoint):
         item = table.selectedItems()[0]
-        if isinstance(item, AnimeWidgetItem):
+        if isinstance(item, (AnimeWidgetItem, HiddenProgressBarItem)):
             self._open_anime_context_menu(table, item.anime)
         elif isinstance(item, LinkWidgetItem):
             self._open_nyaa_context_menu(table, item)
