@@ -26,7 +26,7 @@ from rapidfuzz import fuzz
 from anitracker import __version__
 from anitracker.config import Config
 from anitracker.media import AnimeCollection, AnimeFile, UserStatus
-from anitracker.media.anime import SubtitleTrack
+from anitracker.media.anime import NyaaResult, SubtitleTrack
 from anitracker.sync import AniList
 from anitracker.parser import parse
 
@@ -432,7 +432,7 @@ class AniTracker:
                     (data["anime_title"], int(data["episode"]))
                 ] = str(file)
 
-    def search_nyaa(self, query: str) -> Iterator[List]:
+    def search_nyaa(self, query: str) -> Iterator[NyaaResult]:
         url = "https://nyaa.si/"
         params = {"f": 0, "c": "0_0", "q": query, "s": "seeders", "o": "desc"}
         headers = {"User-Agent": f"AniTracker/{__version__} (Language=py)"}
@@ -443,16 +443,4 @@ class AniTracker:
 
             if body is not None:
                 for result in body.findAll("tr"):
-                    children = result.findAll("td")
-
-                    yield [
-                        children[1].find("a", href=re.compile(r"^/view/\d+$")).text,
-                        children[3].text,
-                        children[4].text,
-                        children[5].text,
-                        children[6].text,
-                        children[7].text,
-                        children[2]
-                        .find("a", href=re.compile(r"^magnet:.*$"))
-                        .get("href"),
-                    ]
+                    yield NyaaResult.from_data(result)

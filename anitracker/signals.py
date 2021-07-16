@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+
 from enum import Enum
 import os
+import re
 import pycountry
 import shlex
 import sys
@@ -26,6 +28,16 @@ from anitracker.background import (
 
 if TYPE_CHECKING:
     from anitracker.__main__ import MainWindow
+    from anitracker.media.anime import NyaaResult
+
+
+def _open_magnet(magnet: str):
+    if sys.platform.startswith("linux"):
+        cmd = shlex.split(f"xdg-open '{magnet}'")
+        subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+    elif sys.platform.startswith("win32"):
+        cmd = shlex.split(f"start '{magnet}'")
+        subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
 
 class HiddenProgressBarItem(QTableWidgetItem):
@@ -56,10 +68,11 @@ class AnimeWidgetItem(QTableWidgetItem):
 
 
 class LinkWidgetItem(QTableWidgetItem):
-    def __init__(self, link: str):
+    def __init__(self, magnet: str, link: str):
         super().__init__()
 
         self.link = link
+        self.magnet = magnet
 
 
 class MouseFilter(QObject):
@@ -68,14 +81,6 @@ class MouseFilter(QObject):
 
         self._table = table
         self._playing_episode: Union[PlayEpisode, PlayEpisodes, None] = None
-
-    def _open_link(self, item: LinkWidgetItem):
-        if sys.platform.startswith("linux"):
-            cmd = shlex.split(f"xdg-open '{item.link}'")
-            subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
-        elif sys.platform.startswith("win32"):
-            cmd = shlex.split(f"start '{item.link}'")
-            subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
 
     def mousebuttonrelease_middlebutton(
         self,
@@ -90,7 +95,7 @@ class MouseFilter(QObject):
             )
             self._playing_episode.start()
         elif isinstance(item, LinkWidgetItem):
-            self._open_link(item)
+            _open_magnet(item.magnet)
 
     def mousebuttondblclick_leftbutton(
         self,
@@ -100,7 +105,7 @@ class MouseFilter(QObject):
         if isinstance(item, AnimeWidgetItem):
             window.open_anime_settings(item.anime)
         elif isinstance(item, LinkWidgetItem):
-            self._open_link(item)
+            _open_magnet(item.magnet)
 
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:
         parent: MainWindow = self.parent()  # type: ignore
@@ -239,13 +244,17 @@ class SignalConnector:
     def open_header_menu(self, table: QTableWidget, point: QPoint):
         table.menu.exec_(self.window.ui.AnimeListTab.mapToGlobal(point))  # type: ignore
 
-    # Anime in table was right clicked
     def open_anime_context_menu(self, table: QTableWidget, _: QPoint):
-        # Get attrs that will be used a bit
-        anime: Union[AnimeCollection, Anime] = cast(
-            AnimeWidgetItem, table.selectedItems()[0]
-        ).anime
+        item = table.selectedItems()[0]
+        if isinstance(item, AnimeWidgetItem):
+            self._open_anime_context_menu(table, item.anime)
+        elif isinstance(item, LinkWidgetItem):
+            self._open_nyaa_context_menu(table, item)
 
+    # Anime in table was right clicked
+    def _open_anime_context_menu(
+        self, table: QTableWidget, anime: Union[AnimeCollection, Anime]
+    ):
         # Setup the menu settings
         menu = QMenu(table)
         menu.setStyleSheet(
@@ -375,6 +384,42 @@ class SignalConnector:
             drop,
         ]:
             self.window.anime_updater.start()
+
+    # Anime in nyaa was right clicked
+    def _open_nyaa_context_menu(self, table: QTableWidget, item: LinkWidgetItem):
+        # Setup the menu settings
+        menu = QMenu(table)
+        menu.setStyleSheet(
+            "QMenu::item:selected {background-color: #007fd4}"
+            "QWidget:disabled {color: #000000}"
+            "QMenu {border: 1px solid black}"
+        )
+        menu.setToolTipsVisible(True)
+
+        open_magnet = menu.addAction("Open Torrent")
+        open_link = menu.addAction("Open nyaa.si URL")
+        menu.addSeparator()
+        copy_magnet = menu.addAction("Copy magnet URL")
+        copy_link = menu.addAction("Copy nyaa.si URL")
+
+        # Disable the link ones if there was an issue. This shouldn't happen, but
+        # just in case
+        if not item.link:
+            open_link.setEnabled(False)
+            copy_link.setEnabled(False)
+
+        action = menu.exec_(QCursor.pos())
+
+        if action == copy_link:
+            clipboard = QGuiApplication.clipboard()
+            clipboard.setText(item.link)
+        elif action == copy_magnet:
+            clipboard = QGuiApplication.clipboard()
+            clipboard.setText(item.magnet)
+        elif action == open_magnet:
+            _open_magnet(item.magnet)
+        elif action == open_link:
+            webbrowser.open(item.link)
 
     # Browse for anime folder was clicked
     def select_anime_path(self):
@@ -514,7 +559,11 @@ class SignalConnector:
 
     # Change banner
     def change_banner(self, item: AnimeWidgetItem):
-        self.window.ui.BannerViewer.setUrl(QUrl(item.anime.cover_image))
+        try:
+            self.window.ui.BannerViewer.setUrl(QUrl(item.anime.cover_image))
+        except AttributeError:
+            # This is a link widget item, we don't want to do anything on click
+            pass
 
     # Search anilist
     def search_anilist(self):
@@ -533,21 +582,25 @@ class SignalConnector:
         self.nyaa_search_task.nyaa_results.connect(self.nyaa_results)  # type: ignore
 
     # Results from the nyaa search
-    def nyaa_results(self, results: List):
+    def nyaa_results(self, results: List[NyaaResult]):
         nyaa = self.window.ui.NyaaSearchResults
         nyaa.setRowCount(0)
+
+        attrs = ["title", "size", "upload_date", "seeders", "leechers", "downloads"]
 
         for result in results:
             nyaa.insertRow(nyaa.rowCount())
 
-            for i in range(nyaa.columnCount()):
-                r = result[i]
-                if r.isdigit():
-                    r = int(r)
+            for i, a in enumerate(attrs):
+                d = getattr(result, a)
 
-                item = LinkWidgetItem(result[len(result) - 1])
-                item.setData(Qt.DisplayRole, r)  # type: ignore
-                item.setToolTip(result[i])
+                link = ""
+                if match := re.match(r"^\/download/(\d+).torrent", result.link):
+                    link = f"https://nyaa.si/view/{match.group(1)}"
+
+                item = LinkWidgetItem(result.magnet, link)
+                item.setData(Qt.DisplayRole, d)  # type: ignore
+                item.setToolTip(str(d))
                 nyaa.setItem(nyaa.rowCount() - 1, i, item)
 
     # Insert a row into the specified table
