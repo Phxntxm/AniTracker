@@ -45,7 +45,10 @@ class PlayEpisode(QThread):
 
     @Slot()  # type: ignore
     def run(self):
+        status = StatusHelper(f"Playing episode {self._episode}")
+        self._window.statuses.append(status)
         self._window.app.play_episode(self._anime, self._episode, self._window)
+        self._window.statuses.remove(status)
 
 
 class PlayEpisodes(QThread):
@@ -58,7 +61,10 @@ class PlayEpisodes(QThread):
 
     @Slot()  # type: ignore
     def run(self):
+        status = StatusHelper(f"Starting playlist from episode {self._episode}")
+        self._window.statuses.append(status)
         self._window.app.play_episodes(self._anime, self._episode, self._window)
+        self._window.statuses.remove(status)
 
 
 class UpdateAnimeEpisodes(QThread):
