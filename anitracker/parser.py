@@ -1,7 +1,8 @@
-import json
+import functools
 import re
+from rapidfuzz import fuzz
 from pathlib import Path
-from typing import Any, Dict, Optional, Pattern, TypedDict, List, Union
+from typing import Any, Dict, Pattern, TypedDict, List, Union
 
 # Here's all our different regex patterns
 EPISODE_REGEX = re.compile(
@@ -9,9 +10,12 @@ EPISODE_REGEX = re.compile(
     flags=re.IGNORECASE,
 )
 RESOLUTION_REGEX = re.compile(
-    r"(?P<pos_height>\d{3,4})([p]|[x\u00D7](?P<height>\d{3,4}))|\[(?P<alone_height>\d{3,4})\]", flags=re.IGNORECASE
+    r"(?P<pos_height>\d{3,4})([p]|[x\u00D7](?P<height>\d{3,4}))|\[(?P<alone_height>\d{3,4})\]",
+    flags=re.IGNORECASE,
 )
-CHECKSUM_REGEX = re.compile(r"[ -]?[\[(](?P<checksum>[A-Fa-f0-9]{8})[\])][ -]?", flags=re.IGNORECASE)
+CHECKSUM_REGEX = re.compile(
+    r"[ -]?[\[(](?P<checksum>[A-Fa-f0-9]{8})[\])][ -]?", flags=re.IGNORECASE
+)
 BRACKET_TERMS_REGEX = re.compile(r"\[(?P<terms>[\w \-_.]*)\]", flags=re.IGNORECASE)
 YEAR_REGEX = re.compile(r"[\[\( \-](?P<year>\d{4})[\]\) \-]", flags=re.IGNORECASE)
 EXTENSION_REGEX = re.compile(r"(\.(?:(?:[a-z]+)|\[\w+\]))")
@@ -131,18 +135,28 @@ source_terms = [
     r"TV-?RIP",
     r"WEB(CAST|RIP)",
 ]
-drop_terms = ["ONA", "OVA", "END", "FINAL"]
+drop_terms = ["", "ONA", "OVA", "END", "FINAL"]
 
-AUDIO_TERM_REGEX = re.compile(f"({'|'.join(audio_terms)})" + r"(?=[^\w])", flags=re.IGNORECASE)
-VIDEO_TERM_REGEX = re.compile(f"({'|'.join(video_terms)})" + r"(?=[^\w])", flags=re.IGNORECASE)
-SOURCE_TERM_REGEX = re.compile(f"({'|'.join(source_terms)})" + r"(?=[^\w])", flags=re.IGNORECASE)
+AUDIO_TERM_REGEX = re.compile(
+    f"({'|'.join(audio_terms)})" + r"(?=[^\w])", flags=re.IGNORECASE
+)
+VIDEO_TERM_REGEX = re.compile(
+    f"({'|'.join(video_terms)})" + r"(?=[^\w])", flags=re.IGNORECASE
+)
+SOURCE_TERM_REGEX = re.compile(
+    f"({'|'.join(source_terms)})" + r"(?=[^\w])", flags=re.IGNORECASE
+)
 
 # Step 1 parsing
 parsers_step_1: List[ParserType] = [
     {"regex": CHECKSUM_REGEX, "groups": {"checksum": "checksum"}},
     {
         "regex": RESOLUTION_REGEX,
-        "groups": {"height": "resolution", "pos_height": "resolution", "alone_height": "resolution"},
+        "groups": {
+            "height": "resolution",
+            "pos_height": "resolution",
+            "alone_height": "resolution",
+        },
     },
     {"regex": YEAR_REGEX, "groups": {"year": "year"}},
     {"regex": RELEASE_VERSION_REGEX, "groups": {"release": "release_version"}},
@@ -165,11 +179,25 @@ def parse(path: Union[str, Path]) -> Dict[str, Any]:
     return _parse(path)
 
 
+# This data ain't big, pretty tiny dict per filename. Seriously, by estimation
+# it would take about 2,000,000 DIFFERENT files to hit a GB of memory. I think we're safe
+# setting this cache size to unlimited
+@functools.lru_cache(maxsize=None)
 def _parse_string(name: str) -> Dict[str, Any]:
+    """Takes a particlar string and uses a bunch
+    of regex to pull anime data from it"""
+
+    # Add a / to the front, this helps handle the regexes that can match at the beginning
+    # a few regexes have a negative lookbehind, but that fails at the *start* of the line
+    # As far as I know there's no "start of string, or negative lookbehind" in regex, so this
+    # is our solution
     name_to_parse = "/" + EXTENSION_REGEX.sub("", name)
 
+    # This is going to be our data we modify through the function that gets returned
     data: Dict[str, Any] = {}
 
+    # A function to pass to re.sub, handling throwing matches we want into the data
+    # and replacing with '' to remove it
     def replace_and_track(_group: Dict[str, str]):
         def inner(match: re.Match):
             for key, value in _group.items():
@@ -178,47 +206,60 @@ def _parse_string(name: str) -> Dict[str, Any]:
                 except IndexError:
                     continue
                 else:
+                    # Only include if it's not in there already, this makes sure
+                    # that we prioritize first matches, but still remove matches
                     if res and value not in data:
                         data[value] = res
             return ""
 
         return inner
 
-    # Parse the first-step
+    # Use the first step parsers
     for parser_type in parsers_step_1:
-        name_to_parse = parser_type["regex"].sub(replace_and_track(parser_type["groups"]), name_to_parse)
+        name_to_parse = parser_type["regex"].sub(
+            replace_and_track(parser_type["groups"]), name_to_parse
+        )
 
     audio_terms = []
     video_terms = []
     source_terms = []
 
+    # Appends to the specified list and replaces with ''
     def replace_bracket_terms(l: List[str]):
         def inner(match: re.Match):
             l.append(match.group(0))
-            # Now replace it with ""
             return ""
 
         return inner
 
-    # Get the audio and video terms
-    name_to_parse = AUDIO_TERM_REGEX.sub(replace_bracket_terms(audio_terms), name_to_parse)
-    name_to_parse = VIDEO_TERM_REGEX.sub(replace_bracket_terms(video_terms), name_to_parse)
-    name_to_parse = SOURCE_TERM_REGEX.sub(replace_bracket_terms(source_terms), name_to_parse)
+    # Get the audio, video, and source terms
+    name_to_parse = AUDIO_TERM_REGEX.sub(
+        replace_bracket_terms(audio_terms), name_to_parse
+    )
+    name_to_parse = VIDEO_TERM_REGEX.sub(
+        replace_bracket_terms(video_terms), name_to_parse
+    )
+    name_to_parse = SOURCE_TERM_REGEX.sub(
+        replace_bracket_terms(source_terms), name_to_parse
+    )
     # This could leave 'empty' brackets, so remove them
     name_to_parse = EMPTY_BRACKETS_REGEX.sub("", name_to_parse)
     # Now do the step-two parsers
     for parser_type in parsers_step_2:
-        name_to_parse = parser_type["regex"].sub(replace_and_track(parser_type["groups"]), name_to_parse)
+        name_to_parse = parser_type["regex"].sub(
+            replace_and_track(parser_type["groups"]), name_to_parse
+        )
 
-    # Strip off the preceeding thing we added
+    # Strip off the preceeding / we added
     name_to_parse = re.sub("^/ *", "", name_to_parse)
     # At this point replace _ with space
     name_to_parse = re.sub("_+", " ", name_to_parse)
     # Now remove ALL brackets
     name_to_parse = re.sub(r"[\[\]]", "", name_to_parse)
+    # Now remove some stuff that could be left at the end
+    name_to_parse = re.sub(r" ?-$", "", name_to_parse)
     # Now try to split between the anime title and the episode title
-    titles = re.split(" ?- ?", name_to_parse)
-    titles = [t.strip() for t in titles if t.strip() and t.strip().upper() not in drop_terms]
+    titles = [t for t in re.split(" ?- ", name_to_parse) if t.upper() not in drop_terms]
 
     # If there are two titles, the episode should be the second
     if len(titles) == 2:
@@ -235,10 +276,14 @@ def _parse_string(name: str) -> Dict[str, Any]:
     if source_terms:
         data["source_terms"] = source_terms
 
+    # And return the data
     return data
 
 
 def _parse(path: Path) -> Dict[str, Any]:
+    """Takes a path and tries to parse out anime data from it. This will first try to
+    parse the data from the file itself. If it isn't sure if the anime title was found
+    in it, it will check the parent directory's name as well."""
     extension = path.suffix[1:]
 
     data: Dict[str, Any] = {"file_name": str(path.absolute()), "extension": extension}
@@ -252,14 +297,29 @@ def _parse(path: Path) -> Dict[str, Any]:
     if "anime_title" in file_data and "episode_title" not in file_data:
         path_data = _parse_string(path.parent.name)
 
-        # Now check if they differ, if they do combine
-        if file_data["anime_title"] not in path_data["anime_title"]:
-            data["episode_title"] = data["anime_title"]
-            data["anime_title"] = path_data["anime_title"]
+        # Special check to handle common folder names that might be general
+        # containers that we want to ignore
+        if path_data["anime_title"].lower() not in [
+            "anime",
+            "videos",
+            "torrents",
+            "downloads",
+            "documents",
+        ]:
+            # Now check if they differ, if they do combine
+            if (
+                fuzz.ratio(
+                    file_data["anime_title"], path_data["anime_title"], processor=True
+                )
+                < 95
+            ):
+                data["episode_title"] = data["anime_title"]
+                data["anime_title"] = path_data["anime_title"]
 
     # Add a nice bool checking if we think this is an actual anime
     data["is_anime"] = "anime_title" in data and (
-        data.get("extension") in video_file_extensions or data.get("extension") in subtitle_file_extensions
+        data.get("extension") in video_file_extensions
+        or data.get("extension") in subtitle_file_extensions
     )
 
     return data
