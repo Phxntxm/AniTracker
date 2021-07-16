@@ -135,7 +135,7 @@ source_terms = [
     r"TV-?RIP",
     r"WEB(CAST|RIP)",
 ]
-drop_terms = ["", "ONA", "OVA", "END", "FINAL"]
+drop_terms = ["", "ONA", "OVA", "END", "FINAL", "SPECIAL"]
 
 AUDIO_TERM_REGEX = re.compile(
     f"({'|'.join(audio_terms)})" + r"(?=[^\w])", flags=re.IGNORECASE
@@ -257,16 +257,20 @@ def _parse_string(name: str) -> Dict[str, Any]:
     # Now remove ALL brackets
     name_to_parse = re.sub(r"[\[\]]", "", name_to_parse)
     # Now remove some stuff that could be left at the end
-    name_to_parse = re.sub(r" ?-$", "", name_to_parse)
+    name_to_parse = re.sub(r" *[\-\+]+$", "", name_to_parse)
     # Now try to split between the anime title and the episode title
-    titles = [t for t in re.split(" ?- ", name_to_parse) if t.upper() not in drop_terms]
+    titles = [
+        t
+        for t in re.split(r" ?[\-+] | [\-+] ?(?!.*\[\-+])", name_to_parse)
+        if t.strip().upper() not in drop_terms
+    ]
 
     # If there are two titles, the episode should be the second
     if len(titles) == 2:
-        data["episode_title"] = titles[1]
+        data["episode_title"] = titles[1].strip()
     # The first will always be the anime title
     if titles:
-        data["anime_title"] = titles[0]
+        data["anime_title"] = titles[0].strip()
 
     # Throw in the bracketed things
     if video_terms:
@@ -311,7 +315,10 @@ def _parse(path: Path) -> Dict[str, Any]:
                 fuzz.ratio(
                     file_data["anime_title"], path_data["anime_title"], processor=True
                 )
-                < 95
+                # Since we're trying to find a difference between an anime title and an
+                # episode total... they should be *quite* different. It should be safe
+                # lowering this to below 70
+                < 70
             ):
                 data["episode_title"] = data["anime_title"]
                 data["anime_title"] = path_data["anime_title"]
