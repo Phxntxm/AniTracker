@@ -8,6 +8,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     Generator,
@@ -16,10 +17,10 @@ from typing import (
     Optional,
     Tuple,
     Union,
-    TYPE_CHECKING,
 )
 
 import requests
+from aniparser import parse
 from bs4 import BeautifulSoup as bs
 from rapidfuzz import fuzz
 
@@ -28,7 +29,6 @@ from anitracker.config import Config
 from anitracker.media import AnimeCollection, AnimeFile, UserStatus
 from anitracker.media.anime import NyaaResult, SubtitleTrack
 from anitracker.sync import AniList
-from anitracker.parser import parse
 
 if TYPE_CHECKING:
     from anitracker.__main__ import MainWindow
