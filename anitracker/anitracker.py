@@ -24,7 +24,7 @@ from aniparser import parse
 from bs4 import BeautifulSoup as bs
 from rapidfuzz import fuzz
 
-from anitracker import __version__
+from anitracker import user_agent, logger
 from anitracker.config import Config
 from anitracker.media import AnimeCollection, AnimeFile, UserStatus
 from anitracker.media.anime import NyaaResult, SubtitleTrack
@@ -132,6 +132,7 @@ class AniTracker:
 
     def refresh_from_anilist(self):
         # First get all the media
+        logger.debug(f"Retrieving info from anilist")
         media = self._anilist.get_collection()
 
         # Now, there is no harm in leaving stale data... so all we're going to do is update
@@ -241,6 +242,7 @@ class AniTracker:
                     break
 
         # Now return whatever our highest priority was
+        logger.info(f"Using subtitle track {priority} for episode {episode}")
         return priority
 
     def _get_mpv_command(
@@ -294,8 +296,9 @@ class AniTracker:
         window: MainWindow,
     ):
         cmd = self._get_mpv_command(episodes)
+        logger.info(f"Running mpv command: {cmd}")
 
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
 
         perc: int = 0
         last_updated: float = time.monotonic()
@@ -329,6 +332,7 @@ class AniTracker:
                         # sounds like a probable bug in MPV but unrealistic to get fixed as it
                         # will be low priority due to how niche it is
                         if now - last_updated > 2:
+                            logger.info(f"Updating episode {current_ep}, progress was {perc}%")
                             self._increment_episode(current_ep, window)
                         self._remove_position_for_episode(current_ep, pos)
                         last_updated = now
@@ -341,12 +345,6 @@ class AniTracker:
                     current_ep = next(f[0] for f in episodes if f[0].file == stdout)
 
             time.sleep(0.05)
-
-    def _escape_linux_command(self, string: str) -> List[str]:
-        sh = shlex.shlex(string, posix=True)
-        sh.escapedquotes = "\"'"
-        sh.whitespace_split = True
-        return list(sh)
 
     def _increment_episode(self, episode: AnimeFile, window: MainWindow):
         coll = self.get_anime(episode.title)
@@ -400,6 +398,7 @@ class AniTracker:
         except (KeyError, TypeError):
             return
 
+        logger.info(f"Reloading anime folder: {dir}")
         # Clear the dict
         self._episodes.clear()
         # Search through directory
@@ -435,7 +434,7 @@ class AniTracker:
     def search_nyaa(self, query: str) -> Iterator[NyaaResult]:
         url = "https://nyaa.si/"
         params = {"f": 0, "c": "0_0", "q": query, "s": "seeders", "o": "desc"}
-        headers = {"User-Agent": f"AniTracker/{__version__} (Language=py)"}
+        headers = {"User-Agent": user_agent}
 
         with requests.get(url, params=params, headers=headers) as r:
             soup = bs(r.text, features="html.parser")

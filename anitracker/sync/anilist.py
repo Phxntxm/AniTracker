@@ -5,6 +5,7 @@ import webbrowser
 import requests
 import json
 
+from anitracker import user_agent
 from anitracker.gql import queries
 from anitracker.media import Anime
 
@@ -21,7 +22,7 @@ class AniList:
 
     @property
     def headers(self) -> Dict[str, str]:
-        h = {"Accept": "application/json", "Content-Type": "application/json"}
+        h = {"Accept": "application/json", "Content-Type": "application/json", "User-Agent": user_agent}
 
         if self.__access_token:
             h["Authorization"] = f"Bearer {self.__access_token}"
@@ -43,7 +44,7 @@ class AniList:
         else:
             self.__access_token = token
 
-    def gql(self, query_name: str, variables: Dict[str, Any] = None):
+    def gql(self, query_name: str, variables: Dict[str, Any] = None) -> Dict[Any, Any]:
         if variables is None:
             variables = {}
 
@@ -66,12 +67,12 @@ class AniList:
         url = f"{BASE_URL}/oauth/authorize?{urllib.parse.urlencode(payload)}"
         webbrowser.open(url)
 
-    def get_collection(self):
+    def get_collection(self) -> Dict[Any, Any]:
         ret = self.gql("media_collection", variables={"userName": self.name})
 
         return ret
 
-    def verify(self):
+    def verify(self) -> Dict[Any, Any]:
         ret = self.gql("viewer")
 
         if ret["data"]["Viewer"] is None:

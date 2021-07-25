@@ -34,10 +34,10 @@ if TYPE_CHECKING:
 def _open_magnet(magnet: str):
     if sys.platform.startswith("linux"):
         cmd = shlex.split(f"xdg-open '{magnet}'")
-        subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
     elif sys.platform.startswith("win32"):
         cmd = shlex.split(f"start '{magnet}'")
-        subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+        subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
 
 
 class HiddenProgressBarItem(QTableWidgetItem):
@@ -362,10 +362,10 @@ class SignalConnector:
                 self.window.app.remove_anime(anime.id)
             elif action == open_folder and folder is not None:
                 if sys.platform.startswith("win32"):
-                    subprocess.Popen(["start", folder], shell=True)
+                    subprocess.Popen(["start", folder], shell=True, stdin=subprocess.DEVNULL)
                 elif sys.platform.startswith("linux"):
                     subprocess.Popen(
-                        ["xdg-open", folder],
+                        ["xdg-open", folder], stdin=subprocess.DEVNULL,
                     )
             elif action == play_next:
                 self._playing_episode = PlayEpisode(anime, next_ep, self.window)

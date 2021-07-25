@@ -3,13 +3,13 @@ from __future__ import annotations
 import functools
 import os
 import sys
-from typing import Dict, List, Optional, Union, cast
+from typing import Dict, List, Optional, Union
 
 from PySide2.QtCore import *  # type: ignore
 from PySide2.QtGui import *  # type: ignore
 from PySide2.QtWidgets import *  # type: ignore
 
-from anitracker import __version__
+from anitracker import __version__, logger
 from anitracker.anitracker import AniTracker
 from anitracker.background import *
 from anitracker.media import Anime, AnimeCollection, UserStatus
@@ -325,6 +325,16 @@ class MainWindow(QMainWindow):
         m.setFixedSize(m.size())
 
         m.show()
+
+# Attach uncaught exceptions, so they can be logged
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+
+    logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+sys.excepthook = handle_exception
 
 
 def main():

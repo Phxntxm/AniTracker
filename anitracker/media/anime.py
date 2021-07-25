@@ -1,13 +1,15 @@
 from __future__ import annotations
+import json
 
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import date
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
-import ffmpeg
+from anitracker import logger
 
 if TYPE_CHECKING:
     from anitracker.sync import AniList
@@ -43,9 +45,20 @@ ffprobe_cmd = "ffprobe"
 
 if hasattr(sys, "_MEIPASS"):
     if sys.platform.startswith("win32"):
-        ffprobe_cmd = f"{sys._MEIPASS}/ffprobe.exe"  # type: ignore
+        ffprobe_cmd = f"{sys._MEIPASS}\\ffprobe.exe"  # type: ignore
     elif sys.platform.startswith("linux"):
         ffprobe_cmd = f"{sys._MEIPASS}/ffprobe"  # type: ignore
+
+def ffprobe_data(file: str) -> Dict:
+    args = [ffprobe_cmd, "-show_format", "-show_streams", "-of", "json", file]
+    logger.info(f"Running ffprobe command {args}")
+    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
+    out, _ = p.communicate()
+
+    if p.returncode == 0:
+        return json.loads(out.decode("utf-8"))
+    else:
+        return {}
 
 
 @dataclass
@@ -110,7 +123,7 @@ class Anime:
     cover_image: str
 
     def __repr__(self) -> str:
-        return f"<Anime(id={self.id} title={self.english_title})>"
+        return f"<Anime id={self.id} title={self.english_title}>"
 
     __str__ = __repr__
 
@@ -406,6 +419,11 @@ class AnimeFile:
     episode_number: int
     subtitles: List[SubtitleTrack]
 
+    def __repr__(self) -> str:
+        return f"<AnimeFile title={self.title} episode_number={self.episode_number}>"
+    
+    __str__ = __repr__
+
     @classmethod
     def from_data(cls, data: Dict) -> Union[List[AnimeFile], AnimeFile]:
         # TODO: Probably create my own parser, this fails on e.g.
@@ -439,19 +457,22 @@ class AnimeFile:
             )
 
     def _mediainfo(self) -> Dict:
-        try:
-            data = ffmpeg.probe(self.file, ffprobe_cmd)
-        except ffmpeg.Error:
-            return {}
+        args = [ffprobe_cmd, "-show_format", "-show_streams", "-of", "json", self.file]
+        logger.info(f"Running ffprobe command {args}")
+        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
+        out, _ = p.communicate()
+
+        if p.returncode == 0:
+            return json.loads(out.decode("utf-8"))
         else:
-            return data
+            return {}
 
     def load_subtitles(self, standalone_subs: Dict[Tuple[str, int], str]):
         self.subtitles = []
 
         sub_id = 1
 
-        for stream in self._mediainfo().get("streams", []):
+        for stream in ffprobe_data(self.file).get("streams", []):
             if stream["codec_type"] == "subtitle":
                 # Insert the sub_id into the data
                 stream["tags"]["id"] = sub_id
@@ -472,6 +493,8 @@ class SubtitleTrack:
 
     def __repr__(self) -> str:
         return f"<SubtitleTrack lang='{self.language}' title='{self.title}'>"
+    
+    __str__ = __repr__
 
     @classmethod
     def from_data(cls, data: Dict):
@@ -489,7 +512,7 @@ class SubtitleTrack:
 
     @classmethod
     def from_file(cls, file: str):
-        data = ffmpeg.probe(file, ffprobe_cmd)["streams"][0]
+        data = ffprobe_data(file)["streams"][0]
         data["file_name"] = file
         return cls.from_data(data)
 
