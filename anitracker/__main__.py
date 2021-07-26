@@ -344,25 +344,6 @@ def main():
     window.setFixedSize(window.size())
     window.show()
 
-    # First replace the file situation if it's there's been some partial/finished download
-    if sys.platform.startswith("win32") and getattr(sys, "frozen", False):
-        d = os.path.dirname(sys.executable)
-
-        try:
-            # We have a backup file
-            os.stat(f"{d}\\anitracker.exe.bak")
-            try:
-                os.stat(f"{d}\\anitracker.exe")
-            # Just a backup, download succeeded
-            except FileNotFoundError:
-                os.rename(f"{d}\\anitracker.exe.bak", f"{d}\\anitracker.exe")
-            # We have a main and backup... download failed, remove partial download
-            else:
-                if not sys.executable.endswith(".bak"):
-                    os.remove(f"{d}\\anitracker.exe.bak")
-        # No backup file, no download happened, we don't care
-        except FileNotFoundError:
-            pass
     ret = app.exec_()
     window.stop_threads()
     sys.exit(ret)

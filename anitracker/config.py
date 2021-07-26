@@ -1,9 +1,14 @@
 import pathlib
+import sys
 from typing import Any
 
 import toml
 
-CONFIG_LOCATION = pathlib.Path("~/.config/anitracker/")
+if hasattr(sys, "_MEIPASS"):
+    CONFIG_LOCATION = pathlib.Path(sys._MEIPASS).parent
+else:
+    CONFIG_LOCATION = pathlib.Path("~/.config/anitracker/")
+
 DEFAULT_SETTINGS = {"subtitle": "eng", "skip_songs_signs": True}
 VALUE_TYPE = Any
 

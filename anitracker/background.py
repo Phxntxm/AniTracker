@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import functools
 import os
 import sys
 import tempfile
 import traceback
 from time import sleep
 from typing import TYPE_CHECKING, Optional, Union, List
+import webbrowser
 
 import requests
 from PySide2.QtCore import *  # type: ignore
@@ -258,19 +258,16 @@ class UpdateChecker(QThread):
                 # Append running update to statuses
                 status.status = "Preparing update"
 
-                # On linux, write to temp file then replace once it's done
+                # Linux
                 if sys.platform.startswith("linux"):
                     url = "https://github.com/Phxntxm/AniTracker/releases/latest/download/anitracker"
-                # On windows
+                # Windows
                 else:
-                    url = "https://github.com/Phxntxm/AniTracker/releases/latest/download/anitracker.exe"
+                    url = "https://github.com/Phxntxm/AniTracker/releases/latest/download/AniTrackerSetup.exe"
 
-                # Update status for each update in the download streamer
-                for update in self.download_helper(url):
-                    status.status = update
+                webbrowser.open(url)
 
                 # Let them know we're done
-                status.status = "Update successful! You can restart now"
                 sleep(5)
             else:
                 status.status = "Already up to date!"

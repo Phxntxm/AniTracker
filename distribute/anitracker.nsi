@@ -1,0 +1,111 @@
+; Include MUI2
+!include "MUI2.nsh"
+
+; The name of the installer
+Name "AniTracker"
+
+; The file to write
+OutFile "..\dist\AniTrackerSetup.exe"
+
+; The default installation directory
+InstallDir $PROGRAMFILES\AniTracker
+
+; Registry key to check for directory (so if you install again, it will 
+; overwrite the old one automatically)
+InstallDirRegKey HKLM "Software\AniTracker" "Install_Dir"
+
+; lzma solid produces the smallest installer
+SetCompressor /SOLID lzma
+
+;--------------------------------
+
+; Pages
+
+Page components
+Page directory
+Page instfiles
+
+UninstPage uninstConfirm
+UninstPage instfiles
+
+; Modify the MUI FINISHPAGE settings
+!define MUI_FINISHPAGE_NOAUTOCLOSE
+!define MUI_FINISHPAGE_RUN "$INSTDIR\anitracker\anitracker.exe"
+!define MUI_FINISHPAGE_RUN_TEXT "Run AniTracker"
+
+!insertmacro MUI_PAGE_FINISH
+
+ShowInstDetails show
+
+;--------------------------------
+; The stuff to install
+Section "AniTracker"
+    ; Check if already running first
+    FindProcDLL::FindProc "AniTracker.exe"
+    IntCmp $R0 1 0 notRunning
+        MessageBox MB_OK|MB_ICONEXCLAMATION "AniTracker is running. Please close it first" /SD IDOK
+        Abort
+
+    notRunning:
+    SectionIn RO
+
+    ; Set output path to the installation directory.
+    SetOutPath $INSTDIR
+
+    ; Copy the directory in
+    File /nonfatal /a /r "..\dist\windows\"
+    ; Create an exe link
+    CreateShortcut "$INSTDIR\AniTracker.lnk" "$INSTDIR\anitracker\anitracker.exe"
+
+    ; Write the installation path into the registry
+    WriteRegStr HKLM SOFTWARE\AniTracker "Install_Dir" "$INSTDIR"
+
+    ; Write the uninstall keys for Windows
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AniTracker" "DisplayName" "AniTracker"
+    WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AniTracker" "UninstallString" '"$INSTDIR\uninstall.exe"'
+    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AniTracker" "NoModify" 1
+    WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AniTracker" "NoRepair" 1
+    WriteUninstaller "$INSTDIR\uninstall.exe"
+  
+SectionEnd
+
+; Optional section (can be disabled by the user)
+Section "Start Menu Shortcuts"
+
+    CreateDirectory "$SMPROGRAMS\AniTracker"
+    CreateShortcut "$SMPROGRAMS\AniTracker\Uninstall.lnk" "$INSTDIR\uninstall.exe"
+    CreateShortcut "$SMPROGRAMS\AniTracker\AniTracker.lnk" "$INSTDIR\anitracker\anitracker.exe"
+
+SectionEnd
+
+; Desktop shortcut
+Section "Desktop Shortcut"
+
+    CreateShortcut "$desktop\AniTracker.lnk" "$instdir\anitracker\AniTracker.exe"
+
+SectionEnd
+
+;--------------------------------
+
+; Uninstaller
+
+Section "Uninstall"
+  
+    ; Remove registry keys
+    DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\AniTracker"
+    DeleteRegKey HKLM SOFTWARE\AniTracker
+
+    ; Remove files and uninstaller
+    RMDir /r $INSTDIR\anitracker
+    Delete $INSTDIR\anitracker.lnk
+    Delete $INSTDIR\uninstall.exe
+
+    ; Remove shortcuts, if any
+    Delete $desktop\AniTracker.lnk
+    Delete "$SMPROGRAMS\AniTracker\*.lnk"
+
+    ; Remove directories
+    RMDir "$SMPROGRAMS\AniTracker"
+    RMDir "$INSTDIR"
+
+SectionEnd
