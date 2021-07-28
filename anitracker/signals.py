@@ -581,15 +581,13 @@ class SignalConnector:
     # Search anilist
     def search_anilist(self):
         self.window.ui.AnilistSearchResults.setRowCount(0)
-        self.anilist_search_task = SearchAnilist(
-            self.window, self.window.ui.AnilistSearchLineEdit.text()
-        )
+        self.anilist_search_task = BackgroundThread(search_anilist, self.window, self.window.ui.AnilistSearchLineEdit.text())
         self.anilist_search_task.start()
 
     # Start nyaa search
     def search_nyaa(self):
-        self.nyaa_search_task = SearchNyaa(
-            self.window, self.window.ui.NyaaSearchLineEdit.text()
+        self.nyaa_search_task = BackgroundThread(
+            search_nyaa, self.window, self.window.ui.NyaaSearchLineEdit.text()
         )
         self.nyaa_search_task.start()
         self.window.nyaa_results.connect(self.nyaa_results)  # type: ignore
