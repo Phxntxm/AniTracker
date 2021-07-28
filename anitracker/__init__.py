@@ -1,6 +1,7 @@
 __version__ = "1.1.2"
 user_agent = f"AniTracker/{__version__} (Language=py)"
 
+
 def setup_logger():
 
     import logging
@@ -26,6 +27,7 @@ def setup_logger():
     logger.addHandler(logging.FileHandler(path))
 
     return logger
+
 
 logger = setup_logger()
 # Don't want this in the namespace

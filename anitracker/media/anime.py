@@ -49,10 +49,17 @@ if hasattr(sys, "_MEIPASS"):
     elif sys.platform.startswith("linux"):
         ffprobe_cmd = f"{sys._MEIPASS}/ffprobe"  # type: ignore
 
+
 def ffprobe_data(file: str) -> Dict:
     args = [ffprobe_cmd, "-show_format", "-show_streams", "-of", "json", file]
     logger.info(f"Running ffprobe command {args}")
-    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
+    p = subprocess.Popen(
+        args,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        stdin=subprocess.DEVNULL,
+        shell=True,
+    )
     out, _ = p.communicate()
 
     if p.returncode == 0:
@@ -421,7 +428,7 @@ class AnimeFile:
 
     def __repr__(self) -> str:
         return f"<AnimeFile title={self.title} episode_number={self.episode_number}>"
-    
+
     __str__ = __repr__
 
     @classmethod
@@ -456,17 +463,6 @@ class AnimeFile:
                 f"Could not parse data, expected list or string as episode, got {type(episode)}"
             )
 
-    def _mediainfo(self) -> Dict:
-        args = [ffprobe_cmd, "-show_format", "-show_streams", "-of", "json", self.file]
-        logger.info(f"Running ffprobe command {args}")
-        p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
-        out, _ = p.communicate()
-
-        if p.returncode == 0:
-            return json.loads(out.decode("utf-8"))
-        else:
-            return {}
-
     def load_subtitles(self, standalone_subs: Dict[Tuple[str, int], str]):
         self.subtitles = []
 
@@ -493,7 +489,7 @@ class SubtitleTrack:
 
     def __repr__(self) -> str:
         return f"<SubtitleTrack lang='{self.language}' title='{self.title}'>"
-    
+
     __str__ = __repr__
 
     @classmethod

@@ -18,8 +18,9 @@ class Ui_About(object):
         if not About.objectName():
             About.setObjectName(u"About")
         About.resize(462, 300)
-        About.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
-"color: rgb(212, 212, 212);")
+        About.setStyleSheet(
+            u"background-color: rgb(68, 68, 68);\n" "color: rgb(212, 212, 212);"
+        )
         self.label = QLabel(About)
         self.label.setObjectName(u"label")
         self.label.setGeometry(QRect(10, 10, 442, 241))
@@ -36,11 +37,22 @@ class Ui_About(object):
         self.retranslateUi(About)
 
         QMetaObject.connectSlotsByName(About)
+
     # setupUi
 
     def retranslateUi(self, About):
-        About.setWindowTitle(QCoreApplication.translate("About", u"About AniTracker", None))
-        self.label.setText(QCoreApplication.translate("About", u"<html><head/><body><p>AniTracker is a tool used to facilitate syncing of data<br/>between anime services, as well as tracking and playing files for your anime. Currently it is pretty barebones, but more and more features are planned as time goes on.</p><p><br/></p><p>Icons from: <a href=\"https://icons8.com/\"><span style=\" text-decoration: underline; color:#0000ff;\">https://icons8.com/</span></a></p></body></html>", None))
-        self.VersionLabel.setText(QCoreApplication.translate("About", u"Version: 1", None))
-    # retranslateUi
+        About.setWindowTitle(
+            QCoreApplication.translate("About", u"About AniTracker", None)
+        )
+        self.label.setText(
+            QCoreApplication.translate(
+                "About",
+                u'<html><head/><body><p>AniTracker is a tool used to facilitate syncing of data<br/>between anime services, as well as tracking and playing files for your anime. Currently it is pretty barebones, but more and more features are planned as time goes on.</p><p><br/></p><p>Icons from: <a href="https://icons8.com/"><span style=" text-decoration: underline; color:#0000ff;">https://icons8.com/</span></a></p></body></html>',
+                None,
+            )
+        )
+        self.VersionLabel.setText(
+            QCoreApplication.translate("About", u"Version: 1", None)
+        )
 
+    # retranslateUi

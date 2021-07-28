@@ -17,24 +17,33 @@ from PySide2.QtWebEngineWidgets import QWebEngineView
 
 from anitracker import resources_rc
 
+
 class Ui_AnimeApp(object):
     def setupUi(self, AnimeApp):
         if not AnimeApp.objectName():
             AnimeApp.setObjectName(u"AnimeApp")
         AnimeApp.resize(1049, 596)
-        AnimeApp.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
-"color: rgb(212, 212, 212);")
+        AnimeApp.setStyleSheet(
+            u"background-color: rgb(68, 68, 68);\n" "color: rgb(212, 212, 212);"
+        )
         self.actionSettings = QAction(AnimeApp)
         self.actionSettings.setObjectName(u"actionSettings")
         self.actionRefresh = QAction(AnimeApp)
         self.actionRefresh.setObjectName(u"actionRefresh")
         icon = QIcon()
-        icon.addFile(u":/refresh/icons8-refresh-30.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon.addFile(
+            u":/refresh/icons8-refresh-30.png", QSize(), QIcon.Normal, QIcon.Off
+        )
         self.actionRefresh.setIcon(icon)
         self.actionReload_Videos = QAction(AnimeApp)
         self.actionReload_Videos.setObjectName(u"actionReload_Videos")
         icon1 = QIcon()
-        icon1.addFile(u":/reload_videos/icons8-video-playlist-50.png", QSize(), QIcon.Normal, QIcon.Off)
+        icon1.addFile(
+            u":/reload_videos/icons8-video-playlist-50.png",
+            QSize(),
+            QIcon.Normal,
+            QIcon.Off,
+        )
         self.actionReload_Videos.setIcon(icon1)
         self.actionAbout = QAction(AnimeApp)
         self.actionAbout.setObjectName(u"actionAbout")
@@ -46,9 +55,11 @@ class Ui_AnimeApp(object):
         self.actionUpdateCheck.setObjectName(u"actionUpdateCheck")
         self.MainWidget = QWidget(AnimeApp)
         self.MainWidget.setObjectName(u"MainWidget")
-        self.MainWidget.setStyleSheet(u"background-color: rgb(55, 55, 61);\n"
-"alternate-background-color: rgb(84, 84, 93);\n"
-"color: rgb(212, 212, 212);")
+        self.MainWidget.setStyleSheet(
+            u"background-color: rgb(55, 55, 61);\n"
+            "alternate-background-color: rgb(84, 84, 93);\n"
+            "color: rgb(212, 212, 212);"
+        )
         self.AnimePages = QStackedWidget(self.MainWidget)
         self.AnimePages.setObjectName(u"AnimePages")
         self.AnimePages.setGeometry(QRect(250, 0, 811, 501))
@@ -59,34 +70,36 @@ class Ui_AnimeApp(object):
         self.AnimeListTab = QTabWidget(self.MyListPage)
         self.AnimeListTab.setObjectName(u"AnimeListTab")
         self.AnimeListTab.setGeometry(QRect(0, 10, 791, 491))
-        self.AnimeListTab.setStyleSheet(u"QHeaderView::section{\n"
-"	background-color: rgb(68, 68, 68);\n"
-"}\n"
-"QTabWidget::pane {\n"
-"	border: 2px solid #C2C7CB;\n"
-"}\n"
-"QTabWidget::tab-bar {\n"
-"	left: 5px;\n"
-"}\n"
-"QTabBar::tab {\n"
-"	background: rgb(68, 68, 68);\n"
-"    border: 2px solid #C4C4C3;\n"
-"    border-bottom-color: #C2C7CB;\n"
-"    border-top-left-radius: 4px;\n"
-"    border-top-right-radius: 4px;\n"
-"    min-width: 8ex;\n"
-"    padding: 2px;\n"
-"}\n"
-"QTabBar::tab:selected, QTabBar::tab:hover {\n"
-"	background: rgb(95, 95, 95);\n"
-"}\n"
-"QTabBar::tab:selected {\n"
-"	border-color: #9B9B9B;\n"
-"	border-bottom-color: #C2C7CB;\n"
-"}\n"
-"QTabBar::tab:!selected {\n"
-"	margin-top: 2px;\n"
-"}")
+        self.AnimeListTab.setStyleSheet(
+            u"QHeaderView::section{\n"
+            "	background-color: rgb(68, 68, 68);\n"
+            "}\n"
+            "QTabWidget::pane {\n"
+            "	border: 2px solid #C2C7CB;\n"
+            "}\n"
+            "QTabWidget::tab-bar {\n"
+            "	left: 5px;\n"
+            "}\n"
+            "QTabBar::tab {\n"
+            "	background: rgb(68, 68, 68);\n"
+            "    border: 2px solid #C4C4C3;\n"
+            "    border-bottom-color: #C2C7CB;\n"
+            "    border-top-left-radius: 4px;\n"
+            "    border-top-right-radius: 4px;\n"
+            "    min-width: 8ex;\n"
+            "    padding: 2px;\n"
+            "}\n"
+            "QTabBar::tab:selected, QTabBar::tab:hover {\n"
+            "	background: rgb(95, 95, 95);\n"
+            "}\n"
+            "QTabBar::tab:selected {\n"
+            "	border-color: #9B9B9B;\n"
+            "	border-bottom-color: #C2C7CB;\n"
+            "}\n"
+            "QTabBar::tab:!selected {\n"
+            "	margin-top: 2px;\n"
+            "}"
+        )
         self.WatchingTab = QWidget()
         self.WatchingTab.setObjectName(u"WatchingTab")
         self.gridLayout_2 = QGridLayout(self.WatchingTab)
@@ -94,9 +107,11 @@ class Ui_AnimeApp(object):
         self.WatchingTable = QTableWidget(self.WatchingTab)
         self.WatchingTable.setObjectName(u"WatchingTable")
         self.WatchingTable.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.WatchingTable.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
-"alternate-background-color: rgb(95, 95, 95);\n"
-"color: rgb(212, 212, 212);")
+        self.WatchingTable.setStyleSheet(
+            u"background-color: rgb(68, 68, 68);\n"
+            "alternate-background-color: rgb(95, 95, 95);\n"
+            "color: rgb(212, 212, 212);"
+        )
         self.WatchingTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.WatchingTable.setAlternatingRowColors(True)
         self.WatchingTable.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -121,9 +136,11 @@ class Ui_AnimeApp(object):
         self.gridLayout_3.setObjectName(u"gridLayout_3")
         self.CompletedTable = QTableWidget(self.CompletedTab)
         self.CompletedTable.setObjectName(u"CompletedTable")
-        self.CompletedTable.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
-"alternate-background-color: rgb(95, 95, 95);\n"
-"color: rgb(212, 212, 212);")
+        self.CompletedTable.setStyleSheet(
+            u"background-color: rgb(68, 68, 68);\n"
+            "alternate-background-color: rgb(95, 95, 95);\n"
+            "color: rgb(212, 212, 212);"
+        )
         self.CompletedTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.CompletedTable.setAlternatingRowColors(True)
         self.CompletedTable.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -146,9 +163,11 @@ class Ui_AnimeApp(object):
         self.gridLayout_4.setObjectName(u"gridLayout_4")
         self.PlanningTable = QTableWidget(self.PlanningTab)
         self.PlanningTable.setObjectName(u"PlanningTable")
-        self.PlanningTable.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
-"alternate-background-color: rgb(95, 95, 95);\n"
-"color: rgb(212, 212, 212);")
+        self.PlanningTable.setStyleSheet(
+            u"background-color: rgb(68, 68, 68);\n"
+            "alternate-background-color: rgb(95, 95, 95);\n"
+            "color: rgb(212, 212, 212);"
+        )
         self.PlanningTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.PlanningTable.setAlternatingRowColors(True)
         self.PlanningTable.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -170,9 +189,11 @@ class Ui_AnimeApp(object):
         self.gridLayout_5.setObjectName(u"gridLayout_5")
         self.PausedTable = QTableWidget(self.PausedTab)
         self.PausedTable.setObjectName(u"PausedTable")
-        self.PausedTable.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
-"alternate-background-color: rgb(95, 95, 95);\n"
-"color: rgb(212, 212, 212);")
+        self.PausedTable.setStyleSheet(
+            u"background-color: rgb(68, 68, 68);\n"
+            "alternate-background-color: rgb(95, 95, 95);\n"
+            "color: rgb(212, 212, 212);"
+        )
         self.PausedTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.PausedTable.setAlternatingRowColors(True)
         self.PausedTable.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -195,9 +216,11 @@ class Ui_AnimeApp(object):
         self.gridLayout_6.setObjectName(u"gridLayout_6")
         self.DroppedTable = QTableWidget(self.DroppedTab)
         self.DroppedTable.setObjectName(u"DroppedTable")
-        self.DroppedTable.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
-"alternate-background-color: rgb(95, 95, 95);\n"
-"color: rgb(212, 212, 212);")
+        self.DroppedTable.setStyleSheet(
+            u"background-color: rgb(68, 68, 68);\n"
+            "alternate-background-color: rgb(95, 95, 95);\n"
+            "color: rgb(212, 212, 212);"
+        )
         self.DroppedTable.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.DroppedTable.setAlternatingRowColors(True)
         self.DroppedTable.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -220,42 +243,46 @@ class Ui_AnimeApp(object):
         self.SearchTabs = QTabWidget(self.AnimeSearchPage)
         self.SearchTabs.setObjectName(u"SearchTabs")
         self.SearchTabs.setGeometry(QRect(0, 10, 791, 491))
-        self.SearchTabs.setStyleSheet(u"QHeaderView::section{\n"
-"	background-color: rgb(68, 68, 68);\n"
-"}\n"
-"QTabWidget::pane {\n"
-"	border: 2px solid #C2C7CB;\n"
-"}\n"
-"QTabWidget::tab-bar {\n"
-"	left: 5px;\n"
-"}\n"
-"QTabBar::tab {\n"
-"	background: rgb(68, 68, 68);\n"
-"    border: 2px solid #C4C4C3;\n"
-"    border-bottom-color: #C2C7CB;\n"
-"    border-top-left-radius: 4px;\n"
-"    border-top-right-radius: 4px;\n"
-"    min-width: 8ex;\n"
-"    padding: 2px;\n"
-"}\n"
-"QTabBar::tab:selected, QTabBar::tab:hover {\n"
-"	background: rgb(95, 95, 95);\n"
-"}\n"
-"QTabBar::tab:selected {\n"
-"	border-color: #9B9B9B;\n"
-"	border-bottom-color: #C2C7CB;\n"
-"}\n"
-"QTabBar::tab:!selected {\n"
-"	margin-top: 2px;\n"
-"}")
+        self.SearchTabs.setStyleSheet(
+            u"QHeaderView::section{\n"
+            "	background-color: rgb(68, 68, 68);\n"
+            "}\n"
+            "QTabWidget::pane {\n"
+            "	border: 2px solid #C2C7CB;\n"
+            "}\n"
+            "QTabWidget::tab-bar {\n"
+            "	left: 5px;\n"
+            "}\n"
+            "QTabBar::tab {\n"
+            "	background: rgb(68, 68, 68);\n"
+            "    border: 2px solid #C4C4C3;\n"
+            "    border-bottom-color: #C2C7CB;\n"
+            "    border-top-left-radius: 4px;\n"
+            "    border-top-right-radius: 4px;\n"
+            "    min-width: 8ex;\n"
+            "    padding: 2px;\n"
+            "}\n"
+            "QTabBar::tab:selected, QTabBar::tab:hover {\n"
+            "	background: rgb(95, 95, 95);\n"
+            "}\n"
+            "QTabBar::tab:selected {\n"
+            "	border-color: #9B9B9B;\n"
+            "	border-bottom-color: #C2C7CB;\n"
+            "}\n"
+            "QTabBar::tab:!selected {\n"
+            "	margin-top: 2px;\n"
+            "}"
+        )
         self.AnilistSearchTab = QWidget()
         self.AnilistSearchTab.setObjectName(u"AnilistSearchTab")
         self.AnilistSearchResults = QTableWidget(self.AnilistSearchTab)
         self.AnilistSearchResults.setObjectName(u"AnilistSearchResults")
         self.AnilistSearchResults.setGeometry(QRect(10, 50, 771, 401))
-        self.AnilistSearchResults.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
-"alternate-background-color: rgb(95, 95, 95);\n"
-"color: rgb(212, 212, 212);")
+        self.AnilistSearchResults.setStyleSheet(
+            u"background-color: rgb(68, 68, 68);\n"
+            "alternate-background-color: rgb(95, 95, 95);\n"
+            "color: rgb(212, 212, 212);"
+        )
         self.AnilistSearchResults.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.AnilistSearchResults.setAlternatingRowColors(True)
         self.AnilistSearchResults.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -281,9 +308,11 @@ class Ui_AnimeApp(object):
         self.NyaaSearchResults = QTableWidget(self.NyaaSearchTab)
         self.NyaaSearchResults.setObjectName(u"NyaaSearchResults")
         self.NyaaSearchResults.setGeometry(QRect(10, 50, 771, 401))
-        self.NyaaSearchResults.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
-"alternate-background-color: rgb(95, 95, 95);\n"
-"color: rgb(212, 212, 212);")
+        self.NyaaSearchResults.setStyleSheet(
+            u"background-color: rgb(68, 68, 68);\n"
+            "alternate-background-color: rgb(95, 95, 95);\n"
+            "color: rgb(212, 212, 212);"
+        )
         self.NyaaSearchResults.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.NyaaSearchResults.setAlternatingRowColors(True)
         self.NyaaSearchResults.setSelectionMode(QAbstractItemView.SingleSelection)
@@ -317,21 +346,31 @@ class Ui_AnimeApp(object):
         self.StatusLabel.setObjectName(u"StatusLabel")
         self.StatusLabel.setGeometry(QRect(610, 10, 431, 21))
         self.StatusLabel.setStyleSheet(u"color: rgb(36, 255, 36);")
-        self.StatusLabel.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
+        self.StatusLabel.setAlignment(
+            Qt.AlignRight | Qt.AlignTrailing | Qt.AlignVCenter
+        )
         self.BannerViewer = QWebEngineView(self.MainWidget)
         self.BannerViewer.setObjectName(u"BannerViewer")
         self.BannerViewer.setGeometry(QRect(10, 180, 230, 322))
-        self.BannerViewer.setUrl(QUrl(u"https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx21827-10F6m50H4GJK.png"))
+        self.BannerViewer.setUrl(
+            QUrl(
+                u"https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/nx21827-10F6m50H4GJK.png"
+            )
+        )
         AnimeApp.setCentralWidget(self.MainWidget)
         self.menubar = QMenuBar(AnimeApp)
         self.menubar.setObjectName(u"menubar")
         self.menubar.setGeometry(QRect(0, 0, 1049, 22))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
-        self.menuFile.setStyleSheet(u"QMenu::item:selected {background-color: #007fd4} QWidget:disabled {color: #000000} QMenu {border: 1px solid black}")
+        self.menuFile.setStyleSheet(
+            u"QMenu::item:selected {background-color: #007fd4} QWidget:disabled {color: #000000} QMenu {border: 1px solid black}"
+        )
         self.menuHelp = QMenu(self.menubar)
         self.menuHelp.setObjectName(u"menuHelp")
-        self.menuHelp.setStyleSheet(u"QMenu::item:selected {background-color: #007fd4} QWidget:disabled {color: #000000} QMenu {border: 1px solid black}")
+        self.menuHelp.setStyleSheet(
+            u"QMenu::item:selected {background-color: #007fd4} QWidget:disabled {color: #000000} QMenu {border: 1px solid black}"
+        )
         AnimeApp.setMenuBar(self.menubar)
         self.statusbar = QStatusBar(AnimeApp)
         self.statusbar.setObjectName(u"statusbar")
@@ -361,54 +400,117 @@ class Ui_AnimeApp(object):
         self.AnimeListTab.setCurrentIndex(0)
         self.SearchTabs.setCurrentIndex(0)
 
-
         QMetaObject.connectSlotsByName(AnimeApp)
+
     # setupUi
 
     def retranslateUi(self, AnimeApp):
-        AnimeApp.setWindowTitle(QCoreApplication.translate("AnimeApp", u"AniTracker", None))
-        self.actionSettings.setText(QCoreApplication.translate("AnimeApp", u"Settings", None))
-        self.actionRefresh.setText(QCoreApplication.translate("AnimeApp", u"Refresh", None))
-#if QT_CONFIG(tooltip)
-        self.actionRefresh.setToolTip(QCoreApplication.translate("AnimeApp", u"Refresh data from connected account", None))
-#endif // QT_CONFIG(tooltip)
-#if QT_CONFIG(shortcut)
-        self.actionRefresh.setShortcut(QCoreApplication.translate("AnimeApp", u"Ctrl+R", None))
-#endif // QT_CONFIG(shortcut)
-        self.actionReload_Videos.setText(QCoreApplication.translate("AnimeApp", u"Reload Videos", None))
-#if QT_CONFIG(tooltip)
-        self.actionReload_Videos.setToolTip(QCoreApplication.translate("AnimeApp", u"Reload videos from the anime folder", None))
-#endif // QT_CONFIG(tooltip)
-#if QT_CONFIG(shortcut)
-        self.actionReload_Videos.setShortcut(QCoreApplication.translate("AnimeApp", u"Ctrl+R", None))
-#endif // QT_CONFIG(shortcut)
+        AnimeApp.setWindowTitle(
+            QCoreApplication.translate("AnimeApp", u"AniTracker", None)
+        )
+        self.actionSettings.setText(
+            QCoreApplication.translate("AnimeApp", u"Settings", None)
+        )
+        self.actionRefresh.setText(
+            QCoreApplication.translate("AnimeApp", u"Refresh", None)
+        )
+        # if QT_CONFIG(tooltip)
+        self.actionRefresh.setToolTip(
+            QCoreApplication.translate(
+                "AnimeApp", u"Refresh data from connected account", None
+            )
+        )
+        # endif // QT_CONFIG(tooltip)
+        # if QT_CONFIG(shortcut)
+        self.actionRefresh.setShortcut(
+            QCoreApplication.translate("AnimeApp", u"Ctrl+R", None)
+        )
+        # endif // QT_CONFIG(shortcut)
+        self.actionReload_Videos.setText(
+            QCoreApplication.translate("AnimeApp", u"Reload Videos", None)
+        )
+        # if QT_CONFIG(tooltip)
+        self.actionReload_Videos.setToolTip(
+            QCoreApplication.translate(
+                "AnimeApp", u"Reload videos from the anime folder", None
+            )
+        )
+        # endif // QT_CONFIG(tooltip)
+        # if QT_CONFIG(shortcut)
+        self.actionReload_Videos.setShortcut(
+            QCoreApplication.translate("AnimeApp", u"Ctrl+R", None)
+        )
+        # endif // QT_CONFIG(shortcut)
         self.actionAbout.setText(QCoreApplication.translate("AnimeApp", u"About", None))
-        self.actionReport_bug.setText(QCoreApplication.translate("AnimeApp", u"Report bug", None))
-        self.actionSource_code.setText(QCoreApplication.translate("AnimeApp", u"Source code", None))
-        self.actionUpdateCheck.setText(QCoreApplication.translate("AnimeApp", u"Update", None))
-        self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.WatchingTab), QCoreApplication.translate("AnimeApp", u"Watching", None))
-        self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.CompletedTab), QCoreApplication.translate("AnimeApp", u"Completed", None))
-        self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.PlanningTab), QCoreApplication.translate("AnimeApp", u"Planning", None))
-        self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.PausedTab), QCoreApplication.translate("AnimeApp", u"Paused", None))
-        self.AnimeListTab.setTabText(self.AnimeListTab.indexOf(self.DroppedTab), QCoreApplication.translate("AnimeApp", u"Dropped", None))
-        self.AnilistSearchLineEdit.setPlaceholderText(QCoreApplication.translate("AnimeApp", u"Search Anime", None))
-        self.AnilistSearchButton.setText(QCoreApplication.translate("AnimeApp", u"Search", None))
-        self.SearchTabs.setTabText(self.SearchTabs.indexOf(self.AnilistSearchTab), QCoreApplication.translate("AnimeApp", u"Anilist", None))
-        self.NyaaSearchButton.setText(QCoreApplication.translate("AnimeApp", u"Search", None))
-        self.NyaaSearchLineEdit.setPlaceholderText(QCoreApplication.translate("AnimeApp", u"Search Anime", None))
-        self.SearchTabs.setTabText(self.SearchTabs.indexOf(self.NyaaSearchTab), QCoreApplication.translate("AnimeApp", u"Nyaa.si", None))
+        self.actionReport_bug.setText(
+            QCoreApplication.translate("AnimeApp", u"Report bug", None)
+        )
+        self.actionSource_code.setText(
+            QCoreApplication.translate("AnimeApp", u"Source code", None)
+        )
+        self.actionUpdateCheck.setText(
+            QCoreApplication.translate("AnimeApp", u"Update", None)
+        )
+        self.AnimeListTab.setTabText(
+            self.AnimeListTab.indexOf(self.WatchingTab),
+            QCoreApplication.translate("AnimeApp", u"Watching", None),
+        )
+        self.AnimeListTab.setTabText(
+            self.AnimeListTab.indexOf(self.CompletedTab),
+            QCoreApplication.translate("AnimeApp", u"Completed", None),
+        )
+        self.AnimeListTab.setTabText(
+            self.AnimeListTab.indexOf(self.PlanningTab),
+            QCoreApplication.translate("AnimeApp", u"Planning", None),
+        )
+        self.AnimeListTab.setTabText(
+            self.AnimeListTab.indexOf(self.PausedTab),
+            QCoreApplication.translate("AnimeApp", u"Paused", None),
+        )
+        self.AnimeListTab.setTabText(
+            self.AnimeListTab.indexOf(self.DroppedTab),
+            QCoreApplication.translate("AnimeApp", u"Dropped", None),
+        )
+        self.AnilistSearchLineEdit.setPlaceholderText(
+            QCoreApplication.translate("AnimeApp", u"Search Anime", None)
+        )
+        self.AnilistSearchButton.setText(
+            QCoreApplication.translate("AnimeApp", u"Search", None)
+        )
+        self.SearchTabs.setTabText(
+            self.SearchTabs.indexOf(self.AnilistSearchTab),
+            QCoreApplication.translate("AnimeApp", u"Anilist", None),
+        )
+        self.NyaaSearchButton.setText(
+            QCoreApplication.translate("AnimeApp", u"Search", None)
+        )
+        self.NyaaSearchLineEdit.setPlaceholderText(
+            QCoreApplication.translate("AnimeApp", u"Search Anime", None)
+        )
+        self.SearchTabs.setTabText(
+            self.SearchTabs.indexOf(self.NyaaSearchTab),
+            QCoreApplication.translate("AnimeApp", u"Nyaa.si", None),
+        )
 
         __sortingEnabled = self.AnimeListChooser.isSortingEnabled()
         self.AnimeListChooser.setSortingEnabled(False)
         ___qlistwidgetitem = self.AnimeListChooser.item(0)
-        ___qlistwidgetitem.setText(QCoreApplication.translate("AnimeApp", u"My List", None));
+        ___qlistwidgetitem.setText(
+            QCoreApplication.translate("AnimeApp", u"My List", None)
+        )
         ___qlistwidgetitem1 = self.AnimeListChooser.item(1)
-        ___qlistwidgetitem1.setText(QCoreApplication.translate("AnimeApp", u"Anime Search", None));
+        ___qlistwidgetitem1.setText(
+            QCoreApplication.translate("AnimeApp", u"Anime Search", None)
+        )
         self.AnimeListChooser.setSortingEnabled(__sortingEnabled)
 
-        self.StatusLabel.setText(QCoreApplication.translate("AnimeApp", u"TextLabel", None))
+        self.StatusLabel.setText(
+            QCoreApplication.translate("AnimeApp", u"TextLabel", None)
+        )
         self.menuFile.setTitle(QCoreApplication.translate("AnimeApp", u"File", None))
         self.menuHelp.setTitle(QCoreApplication.translate("AnimeApp", u"Help", None))
-        self.toolBar.setWindowTitle(QCoreApplication.translate("AnimeApp", u"toolBar", None))
-    # retranslateUi
+        self.toolBar.setWindowTitle(
+            QCoreApplication.translate("AnimeApp", u"toolBar", None)
+        )
 
+    # retranslateUi

@@ -18,13 +18,7 @@ from PySide2.QtWidgets import *  # type: ignore
 from anitracker import __version__
 from anitracker.ui import Ui_About, Ui_Settings
 from anitracker.media import Anime, AnimeCollection, UserStatus
-from anitracker.background import (
-    PlayEpisode,
-    EditAnime,
-    SearchAnilist,
-    SearchNyaa,
-    PlayEpisodes,
-)
+from anitracker.background import *
 
 if TYPE_CHECKING:
     from anitracker.__main__ import MainWindow
@@ -34,10 +28,20 @@ if TYPE_CHECKING:
 def _open_magnet(magnet: str):
     if sys.platform.startswith("linux"):
         cmd = shlex.split(f"xdg-open '{magnet}'")
-        subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
+        subprocess.Popen(
+            cmd,
+            stderr=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+        )
     elif sys.platform.startswith("win32"):
         cmd = shlex.split(f"start '{magnet}'")
-        subprocess.Popen(cmd, stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stdin=subprocess.DEVNULL)
+        subprocess.Popen(
+            cmd,
+            stderr=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stdin=subprocess.DEVNULL,
+        )
 
 
 class HiddenProgressBarItem(QTableWidgetItem):
@@ -80,7 +84,7 @@ class MouseFilter(QObject):
         super().__init__(parent=parent)
 
         self._table = table
-        self._playing_episode: Union[PlayEpisode, PlayEpisodes, None] = None
+        self._playing_episode: Union[BackgroundThread, None] = None
 
     def mousebuttonrelease_middlebutton(
         self,
@@ -90,8 +94,8 @@ class MouseFilter(QObject):
         if isinstance(item, AnimeWidgetItem) and isinstance(
             item.anime, AnimeCollection
         ):
-            self._playing_episode = PlayEpisodes(
-                item.anime, item.anime.progress + 1, window
+            self._playing_episode = BackgroundThread(
+                play_episode, item.anime, item.anime.progress + 1, window
             )
             self._playing_episode.start()
         elif isinstance(item, LinkWidgetItem):
@@ -161,7 +165,7 @@ class SignalConnector:
         except KeyError:
             pass
 
-        self.window.anilist_connector.update_label.connect(  # type: ignore
+        self.window.update_anilist_label.connect(  # type: ignore
             s.AnilistConnectedAccountLabel.setText
         )
         s.AnilistConnectedAccountLabel.setText(
@@ -362,17 +366,26 @@ class SignalConnector:
                 self.window.app.remove_anime(anime.id)
             elif action == open_folder and folder is not None:
                 if sys.platform.startswith("win32"):
-                    subprocess.Popen(["start", folder], shell=True, stdin=subprocess.DEVNULL)
+                    subprocess.Popen(
+                        ["start", folder], shell=True, stdin=subprocess.DEVNULL
+                    )
                 elif sys.platform.startswith("linux"):
                     subprocess.Popen(
-                        ["xdg-open", folder], stdin=subprocess.DEVNULL,
+                        ["xdg-open", folder],
+                        stdin=subprocess.DEVNULL,
                     )
             elif action == play_next:
-                self._playing_episode = PlayEpisode(anime, next_ep, self.window)
+                self._playing_episode = BackgroundThread(
+                    play_episode, anime, next_ep, self.window
+                )
                 self._playing_episode.start()
             elif action in play_opts:
-                self._playing_episode = PlayEpisode(
-                    anime, play_opts[action], self.window
+                self._playing_episode = BackgroundThread(
+                    play_episode,
+                    anime,
+                    play_opts[action],
+                    self.window,
+                    start_playlist=False,
                 )
                 self._playing_episode.start()
 
@@ -490,8 +503,8 @@ class SignalConnector:
         notes = self.window.anime_window.AnimeNotes.toPlainText()
         score = self.window.anime_window.AnimeUserScore.value()
 
-        self._anime_editing_thread = EditAnime(
-            self.window, anime, notes=notes, score=score
+        self._anime_editing_thread = BackgroundThread(
+            edit_anime, self.window, anime, notes=notes, score=score
         )
         self._anime_editing_thread.start()
 
@@ -579,7 +592,7 @@ class SignalConnector:
             self.window, self.window.ui.NyaaSearchLineEdit.text()
         )
         self.nyaa_search_task.start()
-        self.nyaa_search_task.nyaa_results.connect(self.nyaa_results)  # type: ignore
+        self.window.nyaa_results.connect(self.nyaa_results)  # type: ignore
 
     # Results from the nyaa search
     def nyaa_results(self, results: List[NyaaResult]):

@@ -21,6 +21,11 @@ class MainWindow(QMainWindow):
     update_ui_signal = Signal(functools.partial)
     insert_row_signal = Signal(QTableWidget, Anime)
     update_row_signal = Signal(QTableWidget, int, Anime)
+    reload_anime_eps = Signal()
+    update_anilist_label = Signal(str)
+    update_label = Signal()
+    handle_anime_updates = Signal()
+    nyaa_results = Signal(list)
 
     # Setup stuff
     def __init__(self, qapp: QApplication):
@@ -80,27 +85,35 @@ class MainWindow(QMainWindow):
     def setup_threads(self):
         # Setup background stuff
         self.threadpool = QThreadPool()
+        self._threads_to_terminate: List[BackgroundThread] = []
         # This will trigger the status label update
-        self.status_update_worker = StatusLabelUpdater(self)
-        self.status_update_worker.setTerminationEnabled(True)
+        self.status_update_worker = BackgroundThread(status_label, self)
         # Used for searching files in the background
-        self.update_worker = UpdateAnimeEpisodes(self)
-        self.update_worker.setTerminationEnabled(True)
+        self.update_worker = BackgroundThread(refresh_folder, self)
         # This'll be the loop that automatically does so every 2 minutes
-        self._update_anime_files_loop = UpdateAnimeEpisodesLoop(self)
-        self._update_anime_files_loop.setTerminationEnabled(True)
+        self._update_anime_files_loop = BackgroundThread(
+            refresh_folder, self, loop_forever=True
+        )
         # Connecting to anilist
-        self.anilist_connector = ConnectToAnilist(self)
-        self.anilist_connector.setTerminationEnabled(True)
+        self.anilist_connector = BackgroundThread(connect_to_anilist, self)
         # Anime updates
-        self.anime_updater = UpdateAnimeLists(self)
-        self.anime_updater.setTerminationEnabled(True)
-        # The success update label
-        self.update_success = AnimeUpdateSuccess()
-        self.update_success.setTerminationEnabled(True)
+        self.anime_updater = BackgroundThread(update_from_anilist, self)
         # Will check for update in the background
-        self.update_checker = UpdateChecker(self)
+        self.update_checker = BackgroundThread(try_update, self)
+
+        # Add them all to the termintable threads
+        self.status_update_worker.setTerminationEnabled(True)
+        self.update_worker.setTerminationEnabled(True)
+        self._update_anime_files_loop.setTerminationEnabled(True)
+        self.anilist_connector.setTerminationEnabled(True)
+        self.anime_updater.setTerminationEnabled(True)
         self.update_checker.setTerminationEnabled(True)
+        self._threads_to_terminate.append(self.status_update_worker)
+        self._threads_to_terminate.append(self.update_worker)
+        self._threads_to_terminate.append(self._update_anime_files_loop)
+        self._threads_to_terminate.append(self.anilist_connector)
+        self._threads_to_terminate.append(self.anime_updater)
+        self._threads_to_terminate.append(self.update_checker)
 
         # Start a few things in the background
         self._update_anime_files_loop.start()
@@ -208,12 +221,10 @@ class MainWindow(QMainWindow):
         self.insert_row_signal.connect(self.signals.insert_row)  # type: ignore
         self.update_row_signal.connect(self.signals.update_row)  # type: ignore
         self.filter_anime.textChanged.connect(self.signals.filter_row)  # type: ignore
-        self.status_update_worker.update.connect(self.signals.update_status)  # type: ignore
-        self.update_worker.reload_anime_eps.connect(self.signals.handle_anime_updates)  # type: ignore
-        self._update_anime_files_loop.reload_anime_eps.connect(self.signals.handle_anime_updates)  # type: ignore
+        self.update_label.connect(self.signals.update_status)  # type: ignore
+        self.reload_anime_eps.connect(self.signals.handle_anime_updates)  # type: ignore
         self.update_ui_signal.connect(self.signals.handle_ui_update)  # type: ignore
-        self.anime_updater.handle_anime_updates.connect(self.signals.handle_anime_updates)  # type: ignore
-        self.update_success.toggle.connect(self.signals.toggle_success)  # type: ignore
+        self.handle_anime_updates.connect(self.signals.handle_anime_updates)  # type: ignore
         self.ui.AnilistSearchButton.clicked.connect(self.signals.search_anilist)  # type: ignore
         self.ui.NyaaSearchButton.clicked.connect(self.signals.search_nyaa)  # type: ignore
         self.ui.AnimeListChooser.currentRowChanged.connect(self.signals.change_page)  # type: ignore
@@ -226,15 +237,7 @@ class MainWindow(QMainWindow):
         self.ui.actionUpdateCheck.triggered.connect(self.update_checker.start)  # type: ignore
 
     def stop_threads(self):
-        for thread in [
-            self.status_update_worker,
-            self.update_worker,
-            self._update_anime_files_loop,
-            self.anilist_connector,
-            self.anime_updater,
-            self.update_checker,
-            self.update_success,
-        ]:
+        for thread in self._threads_to_terminate:
             if thread.isRunning():
                 thread.terminate()
                 thread.wait()
@@ -326,6 +329,7 @@ class MainWindow(QMainWindow):
 
         m.show()
 
+
 # Attach uncaught exceptions, so they can be logged
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
@@ -334,7 +338,8 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 
     logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
-sys.excepthook = handle_exception
+
+# sys.excepthook = handle_exception
 
 
 def main():

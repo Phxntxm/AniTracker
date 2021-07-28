@@ -18,37 +18,40 @@ class Ui_AnimeInfo(object):
         if not AnimeInfo.objectName():
             AnimeInfo.setObjectName(u"AnimeInfo")
         AnimeInfo.resize(751, 543)
-        AnimeInfo.setStyleSheet(u"background-color: rgb(68, 68, 68);\n"
-"color: rgb(212, 212, 212);")
+        AnimeInfo.setStyleSheet(
+            u"background-color: rgb(68, 68, 68);\n" "color: rgb(212, 212, 212);"
+        )
         self.gridLayout = QGridLayout(AnimeInfo)
         self.gridLayout.setObjectName(u"gridLayout")
         self.tabWidget = QTabWidget(AnimeInfo)
         self.tabWidget.setObjectName(u"tabWidget")
-        self.tabWidget.setStyleSheet(u"QTabWidget::pane {\n"
-"	border: 2px solid #C2C7CB;\n"
-"}\n"
-"QTabWidget::tab-bar {\n"
-"	left: 5px;\n"
-"}\n"
-"QTabBar::tab {\n"
-"	background: rgb(68, 68, 68);\n"
-"    border: 2px solid #C4C4C3;\n"
-"    border-bottom-color: #C2C7CB;\n"
-"    border-top-left-radius: 4px;\n"
-"    border-top-right-radius: 4px;\n"
-"    min-width: 8ex;\n"
-"    padding: 2px;\n"
-"}\n"
-"QTabBar::tab:selected, QTabBar::tab:hover {\n"
-"	background: rgb(95, 95, 95);\n"
-"}\n"
-"QTabBar::tab:selected {\n"
-"	border-color: #9B9B9B;\n"
-"	border-bottom-color: #C2C7CB;\n"
-"}\n"
-"QTabBar::tab:!selected {\n"
-"	margin-top: 2px;\n"
-"}")
+        self.tabWidget.setStyleSheet(
+            u"QTabWidget::pane {\n"
+            "	border: 2px solid #C2C7CB;\n"
+            "}\n"
+            "QTabWidget::tab-bar {\n"
+            "	left: 5px;\n"
+            "}\n"
+            "QTabBar::tab {\n"
+            "	background: rgb(68, 68, 68);\n"
+            "    border: 2px solid #C4C4C3;\n"
+            "    border-bottom-color: #C2C7CB;\n"
+            "    border-top-left-radius: 4px;\n"
+            "    border-top-right-radius: 4px;\n"
+            "    min-width: 8ex;\n"
+            "    padding: 2px;\n"
+            "}\n"
+            "QTabBar::tab:selected, QTabBar::tab:hover {\n"
+            "	background: rgb(95, 95, 95);\n"
+            "}\n"
+            "QTabBar::tab:selected {\n"
+            "	border-color: #9B9B9B;\n"
+            "	border-bottom-color: #C2C7CB;\n"
+            "}\n"
+            "QTabBar::tab:!selected {\n"
+            "	margin-top: 2px;\n"
+            "}"
+        )
         self.tab = QWidget()
         self.tab.setObjectName(u"tab")
         sizePolicy = QSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
@@ -60,12 +63,16 @@ class Ui_AnimeInfo(object):
         self.AnimeTitleLabelHeader.setObjectName(u"AnimeTitleLabelHeader")
         self.AnimeTitleLabelHeader.setGeometry(QRect(10, 18, 36, 18))
         self.AnimeTitleLabelHeader.setMaximumSize(QSize(16777215, 16777215))
-        self.AnimeTitleLabelHeader.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
+        self.AnimeTitleLabelHeader.setAlignment(
+            Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop
+        )
         self.AnimeDescriptionLabelHeader = QLabel(self.tab)
         self.AnimeDescriptionLabelHeader.setObjectName(u"AnimeDescriptionLabelHeader")
         self.AnimeDescriptionLabelHeader.setGeometry(QRect(10, 89, 73, 16))
         self.AnimeDescriptionLabelHeader.setMaximumSize(QSize(16777215, 16777215))
-        self.AnimeDescriptionLabelHeader.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
+        self.AnimeDescriptionLabelHeader.setAlignment(
+            Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop
+        )
         self.scrollArea = QScrollArea(self.tab)
         self.scrollArea.setObjectName(u"scrollArea")
         self.scrollArea.setGeometry(QRect(90, 80, 631, 101))
@@ -82,16 +89,22 @@ class Ui_AnimeInfo(object):
         self.AnimeDescriptionLabel = QLabel(self.scrollAreaWidgetContents)
         self.AnimeDescriptionLabel.setObjectName(u"AnimeDescriptionLabel")
         self.AnimeDescriptionLabel.setEnabled(True)
-        sizePolicy.setHeightForWidth(self.AnimeDescriptionLabel.sizePolicy().hasHeightForWidth())
+        sizePolicy.setHeightForWidth(
+            self.AnimeDescriptionLabel.sizePolicy().hasHeightForWidth()
+        )
         self.AnimeDescriptionLabel.setSizePolicy(sizePolicy)
         self.AnimeDescriptionLabel.setMaximumSize(QSize(16777215, 16777215))
         self.AnimeDescriptionLabel.setAutoFillBackground(False)
         self.AnimeDescriptionLabel.setFrameShape(QFrame.NoFrame)
         self.AnimeDescriptionLabel.setTextFormat(Qt.AutoText)
         self.AnimeDescriptionLabel.setScaledContents(False)
-        self.AnimeDescriptionLabel.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
+        self.AnimeDescriptionLabel.setAlignment(
+            Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop
+        )
         self.AnimeDescriptionLabel.setWordWrap(True)
-        self.AnimeDescriptionLabel.setTextInteractionFlags(Qt.LinksAccessibleByMouse|Qt.TextSelectableByMouse)
+        self.AnimeDescriptionLabel.setTextInteractionFlags(
+            Qt.LinksAccessibleByMouse | Qt.TextSelectableByMouse
+        )
 
         self.horizontalLayout.addWidget(self.AnimeDescriptionLabel)
 
@@ -111,9 +124,11 @@ class Ui_AnimeInfo(object):
         self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
         self.AnimeTitleLabel = QLabel(self.scrollAreaWidgetContents_2)
         self.AnimeTitleLabel.setObjectName(u"AnimeTitleLabel")
-        self.AnimeTitleLabel.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
+        self.AnimeTitleLabel.setAlignment(Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop)
         self.AnimeTitleLabel.setWordWrap(True)
-        self.AnimeTitleLabel.setTextInteractionFlags(Qt.LinksAccessibleByMouse|Qt.TextSelectableByMouse)
+        self.AnimeTitleLabel.setTextInteractionFlags(
+            Qt.LinksAccessibleByMouse | Qt.TextSelectableByMouse
+        )
 
         self.horizontalLayout_2.addWidget(self.AnimeTitleLabel)
 
@@ -121,13 +136,19 @@ class Ui_AnimeInfo(object):
         self.AnimeEpisodesLabelHeader = QLabel(self.tab)
         self.AnimeEpisodesLabelHeader.setObjectName(u"AnimeEpisodesLabelHeader")
         self.AnimeEpisodesLabelHeader.setGeometry(QRect(10, 470, 58, 16))
-        self.AnimeEpisodesLabelHeader.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
+        self.AnimeEpisodesLabelHeader.setAlignment(
+            Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop
+        )
         self.AnimeEpisodesLabel = QLabel(self.tab)
         self.AnimeEpisodesLabel.setObjectName(u"AnimeEpisodesLabel")
         self.AnimeEpisodesLabel.setGeometry(QRect(90, 470, 631, 16))
-        self.AnimeEpisodesLabel.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
+        self.AnimeEpisodesLabel.setAlignment(
+            Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop
+        )
         self.AnimeEpisodesLabel.setWordWrap(True)
-        self.AnimeEpisodesLabel.setTextInteractionFlags(Qt.LinksAccessibleByMouse|Qt.TextSelectableByMouse)
+        self.AnimeEpisodesLabel.setTextInteractionFlags(
+            Qt.LinksAccessibleByMouse | Qt.TextSelectableByMouse
+        )
         self.AnimeGenresLabelHeader = QLabel(self.tab)
         self.AnimeGenresLabelHeader.setObjectName(u"AnimeGenresLabelHeader")
         self.AnimeGenresLabelHeader.setGeometry(QRect(10, 199, 57, 15))
@@ -169,10 +190,12 @@ class Ui_AnimeInfo(object):
         self.AnimeGenresLabel = QLabel(self.scrollAreaWidgetContents_3)
         self.AnimeGenresLabel.setObjectName(u"AnimeGenresLabel")
         self.AnimeGenresLabel.setLineWidth(1)
-        self.AnimeGenresLabel.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
+        self.AnimeGenresLabel.setAlignment(Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop)
         self.AnimeGenresLabel.setWordWrap(True)
         self.AnimeGenresLabel.setIndent(-1)
-        self.AnimeGenresLabel.setTextInteractionFlags(Qt.LinksAccessibleByMouse|Qt.TextSelectableByMouse)
+        self.AnimeGenresLabel.setTextInteractionFlags(
+            Qt.LinksAccessibleByMouse | Qt.TextSelectableByMouse
+        )
 
         self.horizontalLayout_3.addWidget(self.AnimeGenresLabel)
 
@@ -190,7 +213,7 @@ class Ui_AnimeInfo(object):
         self.horizontalLayout_4.setObjectName(u"horizontalLayout_4")
         self.AnimeTagsLabel = QLabel(self.scrollAreaWidgetContents_4)
         self.AnimeTagsLabel.setObjectName(u"AnimeTagsLabel")
-        self.AnimeTagsLabel.setAlignment(Qt.AlignLeading|Qt.AlignLeft|Qt.AlignTop)
+        self.AnimeTagsLabel.setAlignment(Qt.AlignLeading | Qt.AlignLeft | Qt.AlignTop)
 
         self.horizontalLayout_4.addWidget(self.AnimeTagsLabel)
 
@@ -221,42 +244,92 @@ class Ui_AnimeInfo(object):
 
         self.gridLayout.addWidget(self.tabWidget, 0, 0, 1, 1)
 
-
         self.retranslateUi(AnimeInfo)
 
         self.tabWidget.setCurrentIndex(0)
 
-
         QMetaObject.connectSlotsByName(AnimeInfo)
+
     # setupUi
 
     def retranslateUi(self, AnimeInfo):
-        AnimeInfo.setWindowTitle(QCoreApplication.translate("AnimeInfo", u"Anime Settings", None))
-        self.AnimeTitleLabelHeader.setText(QCoreApplication.translate("AnimeInfo", u"Titles:", None))
-        self.AnimeDescriptionLabelHeader.setText(QCoreApplication.translate("AnimeInfo", u"Description:", None))
-        self.AnimeDescriptionLabel.setText(QCoreApplication.translate("AnimeInfo", u"Description", None))
-        self.AnimeTitleLabel.setText(QCoreApplication.translate("AnimeInfo", u"Title", None))
-        self.AnimeEpisodesLabelHeader.setText(QCoreApplication.translate("AnimeInfo", u"Episodes:", None))
-        self.AnimeEpisodesLabel.setText(QCoreApplication.translate("AnimeInfo", u"0", None))
-        self.AnimeGenresLabelHeader.setText(QCoreApplication.translate("AnimeInfo", u"Genres:", None))
-        self.AnimeStudioLabelHeader.setText(QCoreApplication.translate("AnimeInfo", u"Studio:", None))
-        self.AnimeSeasonLabelHeader.setText(QCoreApplication.translate("AnimeInfo", u"Season:", None))
-        self.AnimeAverageScoreLabelHeader.setText(QCoreApplication.translate("AnimeInfo", u"Score:", None))
-        self.AnimeStudioLabel.setText(QCoreApplication.translate("AnimeInfo", u"Studio", None))
-        self.AnimeSeasonLabel.setText(QCoreApplication.translate("AnimeInfo", u"Season", None))
-        self.AnimeAverageScoreLabel.setText(QCoreApplication.translate("AnimeInfo", u"Score", None))
-        self.AnimeTagsLabelHeader.setText(QCoreApplication.translate("AnimeInfo", u"Tags:", None))
-        self.AnimeGenresLabel.setText(QCoreApplication.translate("AnimeInfo", u"Genres", None))
-        self.AnimeTagsLabel.setText(QCoreApplication.translate("AnimeInfo", u"Tags", None))
-        self.AnimeUserScoreLabel.setText(QCoreApplication.translate("AnimeInfo", u"Score:", None))
-        self.AnimeNotesLabel.setText(QCoreApplication.translate("AnimeInfo", u"Notes:", None))
-        self.AnimeNotes.setHtml(QCoreApplication.translate("AnimeInfo", u"<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
-"<html><head><meta name=\"qrichtext\" content=\"1\" /><style type=\"text/css\">\n"
-"p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\" font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">Notes</p></body></html>", None))
-        self.AnimeUpdateButton.setText(QCoreApplication.translate("AnimeInfo", u"Update", None))
-        self.AnimeUpdateSuccess.setText(QCoreApplication.translate("AnimeInfo", u"Updated!", None))
-        self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), QCoreApplication.translate("AnimeInfo", u"Anime Information", None))
-    # retranslateUi
+        AnimeInfo.setWindowTitle(
+            QCoreApplication.translate("AnimeInfo", u"Anime Settings", None)
+        )
+        self.AnimeTitleLabelHeader.setText(
+            QCoreApplication.translate("AnimeInfo", u"Titles:", None)
+        )
+        self.AnimeDescriptionLabelHeader.setText(
+            QCoreApplication.translate("AnimeInfo", u"Description:", None)
+        )
+        self.AnimeDescriptionLabel.setText(
+            QCoreApplication.translate("AnimeInfo", u"Description", None)
+        )
+        self.AnimeTitleLabel.setText(
+            QCoreApplication.translate("AnimeInfo", u"Title", None)
+        )
+        self.AnimeEpisodesLabelHeader.setText(
+            QCoreApplication.translate("AnimeInfo", u"Episodes:", None)
+        )
+        self.AnimeEpisodesLabel.setText(
+            QCoreApplication.translate("AnimeInfo", u"0", None)
+        )
+        self.AnimeGenresLabelHeader.setText(
+            QCoreApplication.translate("AnimeInfo", u"Genres:", None)
+        )
+        self.AnimeStudioLabelHeader.setText(
+            QCoreApplication.translate("AnimeInfo", u"Studio:", None)
+        )
+        self.AnimeSeasonLabelHeader.setText(
+            QCoreApplication.translate("AnimeInfo", u"Season:", None)
+        )
+        self.AnimeAverageScoreLabelHeader.setText(
+            QCoreApplication.translate("AnimeInfo", u"Score:", None)
+        )
+        self.AnimeStudioLabel.setText(
+            QCoreApplication.translate("AnimeInfo", u"Studio", None)
+        )
+        self.AnimeSeasonLabel.setText(
+            QCoreApplication.translate("AnimeInfo", u"Season", None)
+        )
+        self.AnimeAverageScoreLabel.setText(
+            QCoreApplication.translate("AnimeInfo", u"Score", None)
+        )
+        self.AnimeTagsLabelHeader.setText(
+            QCoreApplication.translate("AnimeInfo", u"Tags:", None)
+        )
+        self.AnimeGenresLabel.setText(
+            QCoreApplication.translate("AnimeInfo", u"Genres", None)
+        )
+        self.AnimeTagsLabel.setText(
+            QCoreApplication.translate("AnimeInfo", u"Tags", None)
+        )
+        self.AnimeUserScoreLabel.setText(
+            QCoreApplication.translate("AnimeInfo", u"Score:", None)
+        )
+        self.AnimeNotesLabel.setText(
+            QCoreApplication.translate("AnimeInfo", u"Notes:", None)
+        )
+        self.AnimeNotes.setHtml(
+            QCoreApplication.translate(
+                "AnimeInfo",
+                u'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">\n'
+                '<html><head><meta name="qrichtext" content="1" /><style type="text/css">\n'
+                "p, li { white-space: pre-wrap; }\n"
+                "</style></head><body style=\" font-family:'Sans Serif'; font-size:9pt; font-weight:400; font-style:normal;\">\n"
+                '<p style=" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">Notes</p></body></html>',
+                None,
+            )
+        )
+        self.AnimeUpdateButton.setText(
+            QCoreApplication.translate("AnimeInfo", u"Update", None)
+        )
+        self.AnimeUpdateSuccess.setText(
+            QCoreApplication.translate("AnimeInfo", u"Updated!", None)
+        )
+        self.tabWidget.setTabText(
+            self.tabWidget.indexOf(self.tab),
+            QCoreApplication.translate("AnimeInfo", u"Anime Information", None),
+        )
 
+    # retranslateUi

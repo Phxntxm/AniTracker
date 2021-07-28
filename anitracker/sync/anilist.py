@@ -22,7 +22,11 @@ class AniList:
 
     @property
     def headers(self) -> Dict[str, str]:
-        h = {"Accept": "application/json", "Content-Type": "application/json", "User-Agent": user_agent}
+        h = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": user_agent,
+        }
 
         if self.__access_token:
             h["Authorization"] = f"Bearer {self.__access_token}"

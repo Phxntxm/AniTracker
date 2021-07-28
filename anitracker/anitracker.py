@@ -184,7 +184,7 @@ class AniTracker:
         episode.load_subtitles(self._standalone_subtitles)
         self._play_episodes([(episode, self._get_sub_for_episode(episode))], window)
 
-    def play_episodes(
+    def start_playlist(
         self, anime: AnimeCollection, starting_episode: int, window: MainWindow
     ):
         """Starts a playlist for an anime from this episode on"""
@@ -201,7 +201,7 @@ class AniTracker:
             self._play_episodes(episodes, window)
 
     def _anime_is_title(
-        self, anime: AnimeCollection, title: str, *, ratio: int = 95
+        self, anime: AnimeCollection, title: str, *, ratio: int = 80
     ) -> bool:
         """Compares an anime to a title, using a fuzzy match to try for best
         possibility of matching. This also will check all the titles of an anime"""
@@ -263,6 +263,9 @@ class AniTracker:
         # Add the language priority
         cmd.append("--alang=jpn,en")
 
+        # Smooths things out for larger playlists
+        cmd.extend(["--profile=sw-fast", "--hwdec=auto"])
+
         # Add the status message
         cmd.extend(
             ["--term-status-msg='Perc: ::${percent-pos}:: Pos: ::${playback-time}::'"]
@@ -298,7 +301,12 @@ class AniTracker:
         cmd = self._get_mpv_command(episodes)
         logger.info(f"Running mpv command: {cmd}")
 
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+        proc = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            stdin=subprocess.DEVNULL,
+        )
 
         perc: int = 0
         last_updated: float = time.monotonic()
@@ -332,7 +340,9 @@ class AniTracker:
                         # sounds like a probable bug in MPV but unrealistic to get fixed as it
                         # will be low priority due to how niche it is
                         if now - last_updated > 2:
-                            logger.info(f"Updating episode {current_ep}, progress was {perc}%")
+                            logger.info(
+                                f"Updating episode {current_ep}, progress was {perc}%"
+                            )
                             self._increment_episode(current_ep, window)
                         self._remove_position_for_episode(current_ep, pos)
                         last_updated = now
