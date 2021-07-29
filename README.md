@@ -2,9 +2,32 @@
 
 This tool is designed to help watch, sync, and manage animes with tools such as anilist. As of now, only anilist is supported. However this does support both linux and windows at the moment. Additionally, it comes bundled with a built in, multi-platform, minimal, media player (it adds 2 MB on linux version, but about 50 MB on windows). Due to this you don't have to worry about which media player to set the tool up with, it will automatically work and track how far along you are when the app closes in order to automatically update for you.
 
-Download the latest windows release [here](https://github.com/Phxntxm/AniTracker/releases/latest/download/anitracker.exe)
-Download the latest linux release [here](https://github.com/Phxntxm/AniTracker/releases/latest/download/anitracker)
 
+
+
+# Installation
+
+## Windows
+
+Download the latest windows release [here](https://github.com/Phxntxm/AniTracker/releases/latest/download/anitracker.exe)
+
+Simply double click the installer and follow along
+
+## Linux
+
+
+```
+# Create anitracker folder in home folder and go into it
+mkdir ~/anitracker && cd ~/anitracker 
+# Download the tarball (this can also be found on the releases page)
+wget https://github.com/Phxntxm/AniTracker/releases/latest/download/anitracker.tar.gz
+# Untar it
+tar xzf anitracker.tar.gz
+# Remove the uneeded tarball
+rm anitracker.tar.gz
+# Run the finish setup script
+./finish-setup.sh
+```
 
 
 # Tutorial

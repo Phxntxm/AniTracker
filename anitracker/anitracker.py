@@ -22,9 +22,10 @@ from typing import (
 import requests
 from aniparser import parse
 from bs4 import BeautifulSoup as bs
+from bs4.element import Tag
 from rapidfuzz import fuzz
 
-from anitracker import user_agent, logger
+from anitracker import user_agent, logger, frozen_path
 from anitracker.config import Config
 from anitracker.media import AnimeCollection, AnimeFile, UserStatus
 from anitracker.media.anime import NyaaResult, SubtitleTrack
@@ -206,7 +207,7 @@ class AniTracker:
         """Compares an anime to a title, using a fuzzy match to try for best
         possibility of matching. This also will check all the titles of an anime"""
         for _title in anime.titles:
-            if fuzz.ratio(title, _title, processor=True) > ratio:
+            if fuzz.ratio(title, _title, processor=True) >= ratio:
                 return True
 
         return False
@@ -255,8 +256,8 @@ class AniTracker:
             raise TypeError("Unsupported platform")
 
         # Add the mpv command
-        if hasattr(sys, "_MEIPASS"):
-            cmd.extend(shlex.split(f"{sys._MEIPASS}/mpv", posix=not sys.platform.startswith("win32")))  # type: ignore
+        if frozen_path is not None:
+            cmd.extend(shlex.split(f"{frozen_path}/mpv", posix=not sys.platform.startswith("win32")))  # type: ignore
         else:
             cmd.append("mpv")
 
@@ -450,6 +451,6 @@ class AniTracker:
             soup = bs(r.text, features="html.parser")
             body = soup.find("tbody")
 
-            if body is not None:
+            if isinstance(body, Tag):
                 for result in body.findAll("tr"):
                     yield NyaaResult.from_data(result)

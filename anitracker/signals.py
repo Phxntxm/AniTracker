@@ -259,6 +259,15 @@ class SignalConnector:
     def _open_anime_context_menu(
         self, table: QTableWidget, anime: Union[AnimeCollection, Anime]
     ):
+        # Just to shut up the linter
+        remove = None
+        folder = ""
+        open_folder = None
+        play_next = None
+        search_nyaa = None
+        play_opts = {}
+        next_ep = 0
+
         # Setup the menu settings
         menu = QMenu(table)
         menu.setStyleSheet(
@@ -284,14 +293,6 @@ class SignalConnector:
 
         menu.addSeparator()
 
-        # Just to shut up the linter
-        remove = None
-        folder = ""
-        open_folder = None
-        play_next = None
-        search_nyaa = None
-        play_opts = {}
-        next_ep = 0
 
         if isinstance(anime, AnimeCollection):
             # Add episode options
@@ -395,6 +396,7 @@ class SignalConnector:
             complete,
             watch,
             drop,
+            remove,
         ]:
             self.window.anime_updater.start()
 

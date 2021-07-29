@@ -9,7 +9,7 @@ from datetime import date
 from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
-from anitracker import logger
+from anitracker import logger, frozen_path
 
 if TYPE_CHECKING:
     from anitracker.sync import AniList
@@ -43,11 +43,11 @@ class AnimeStatus(Enum):
 
 ffprobe_cmd = "ffprobe"
 
-if hasattr(sys, "_MEIPASS"):
+if frozen_path is not None:
     if sys.platform.startswith("win32"):
-        ffprobe_cmd = f"{sys._MEIPASS}\\ffprobe.exe"  # type: ignore
+        ffprobe_cmd = f"{frozen_path}\\ffprobe.exe"  # type: ignore
     elif sys.platform.startswith("linux"):
-        ffprobe_cmd = f"{sys._MEIPASS}/ffprobe"  # type: ignore
+        ffprobe_cmd = f"{frozen_path}/ffprobe"  # type: ignore
 
 
 def ffprobe_data(file: str) -> Dict:

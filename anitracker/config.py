@@ -4,8 +4,10 @@ from typing import Any
 
 import toml
 
-if hasattr(sys, "_MEIPASS"):
-    CONFIG_LOCATION = pathlib.Path(sys._MEIPASS).parent
+from anitracker import frozen_path
+
+if frozen_path is not None:
+    CONFIG_LOCATION = pathlib.Path(frozen_path).parent
 else:
     CONFIG_LOCATION = pathlib.Path("~/.config/anitracker/")
 
