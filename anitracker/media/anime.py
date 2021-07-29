@@ -53,13 +53,21 @@ if frozen_path is not None:
 def ffprobe_data(file: str) -> Dict:
     args = [ffprobe_cmd, "-show_format", "-show_streams", "-of", "json", file]
     logger.info(f"Running ffprobe command {args}")
+    # I hate windows
+    stdin = None
+    shell = False
+    if sys.platform.startswith("win32"):
+        stdin = subprocess.DEVNULL
+        shell = True
+
     p = subprocess.Popen(
         args,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
-        stdin=subprocess.DEVNULL,
-        shell=True,
+        stdin=stdin,
+        shell=shell,
     )
+
     out, _ = p.communicate()
 
     if p.returncode == 0:

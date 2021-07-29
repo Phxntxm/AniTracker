@@ -100,6 +100,15 @@ class AniTracker:
     def animes(self) -> Dict[int, AnimeCollection]:
         return self._animes.copy()
 
+    # I'm lazy and have to test things a lot
+    @classmethod
+    def _test_setup(cls):
+        inst = cls()
+        inst._anilist.verify()
+        inst._refresh_anime_folder()
+        inst.refresh_from_anilist()
+        return inst
+
     def missing_eps(self, anime: AnimeCollection) -> str:
         have = [ep.episode_number for ep in self.get_episodes(anime)]
         missing = [f"{n}" for n in range(1, anime.episode_count + 1) if n not in have]
@@ -118,13 +127,15 @@ class AniTracker:
         # If there's no title, just return None
         if not title:
             return None
-        # Set the ratio to 100 if this needs to be an exact match
-        ratio = 100 if exact_name_match else 95
 
         # Now loop through all the names
         for anime in self.animes.values():
-            if self._anime_is_title(anime, title, ratio=ratio):
-                return anime
+            if exact_name_match:
+                if self._anime_is_title(anime, title, ratio=100):
+                    return anime
+            else:
+                if self._anime_is_title(anime, title):
+                    return anime
 
         return None
 
@@ -183,7 +194,7 @@ class AniTracker:
 
         # Start with just this episode
         episode.load_subtitles(self._standalone_subtitles)
-        self._play_episodes([(episode, self._get_sub_for_episode(episode))], window)
+        self._play_episodes([(episode, self._get_sub_for_episode(episode))], anime, window)
 
     def start_playlist(
         self, anime: AnimeCollection, starting_episode: int, window: MainWindow
@@ -199,7 +210,7 @@ class AniTracker:
                 episodes.append((episode, self._get_sub_for_episode(episode)))
 
         if episodes:
-            self._play_episodes(episodes, window)
+            self._play_episodes(episodes, anime, window)
 
     def _anime_is_title(
         self, anime: AnimeCollection, title: str, *, ratio: int = 80
@@ -247,7 +258,7 @@ class AniTracker:
         return priority
 
     def _get_mpv_command(
-        self, episodes: List[Tuple[AnimeFile, Optional[SubtitleTrack]]]
+        self, episodes: List[Tuple[AnimeFile, Optional[SubtitleTrack]]], anime: AnimeCollection
     ) -> List[str]:
         # Setup the command
         cmd = []
@@ -271,7 +282,6 @@ class AniTracker:
         cmd.extend(
             ["--term-status-msg='Perc: ::${percent-pos}:: Pos: ::${playback-time}::'"]
         )
-        coll = self.get_anime(episodes[0][0].title, exact_name_match=True)
 
         # Add the subtitle and file pairs
         for ep, sub in episodes:
@@ -284,12 +294,11 @@ class AniTracker:
                 else:
                     cmd.append(f"--sid={sub.id}")
             # Append progress if we can find it
-            if coll is not None:
-                pos = self._config.get_option(
-                    f"{coll.id}-{ep.episode_number}", section="EpisodeProgress"
-                )
-                if pos is not None:
-                    cmd.append(f"--start={pos}")
+            pos = self._config.get_option(
+                f"{anime.id}-{ep.episode_number}", section="EpisodeProgress"
+            )
+            if pos is not None:
+                cmd.append(f"--start={pos}")
             cmd.append(r"--}")
 
         return cmd
@@ -297,9 +306,10 @@ class AniTracker:
     def _play_episodes(
         self,
         episodes: List[Tuple[AnimeFile, Optional[SubtitleTrack]]],
+        anime: AnimeCollection,
         window: MainWindow,
     ):
-        cmd = self._get_mpv_command(episodes)
+        cmd = self._get_mpv_command(episodes, anime)
         logger.info(f"Running mpv command: {cmd}")
 
         proc = subprocess.Popen(
@@ -345,10 +355,10 @@ class AniTracker:
                                 f"Updating episode {current_ep}, progress was {perc}%"
                             )
                             self._increment_episode(current_ep, window)
-                        self._remove_position_for_episode(current_ep, pos)
+                        self._remove_position_for_episode(current_ep, anime, pos)
                         last_updated = now
                     else:
-                        self._save_position_for_episode(current_ep, pos)
+                        self._save_position_for_episode(current_ep, anime, pos)
                 elif stdout.startswith("Playing: "):
                     # Now strip off the playing to get the filename
                     stdout = stdout.split("Playing: ")[1]
@@ -386,21 +396,17 @@ class AniTracker:
         # Now trigger an update of the app
         window.anime_updater.start()
 
-    def _save_position_for_episode(self, episode: AnimeFile, position: str):
-        coll = self.get_anime(episode.title, exact_name_match=True)
-        if coll is not None:
-            self._config.set_option(
-                f"{coll.id}-{episode.episode_number}",
-                position,
-                section="EpisodeProgress",
-            )
+    def _save_position_for_episode(self, episode: AnimeFile, anime: AnimeCollection, position: str):
+        self._config.set_option(
+            f"{anime.id}-{episode.episode_number}",
+            position,
+            section="EpisodeProgress",
+        )
 
-    def _remove_position_for_episode(self, episode: AnimeFile, position: str):
-        coll = self.get_anime(episode.title, exact_name_match=True)
-        if coll is not None:
-            self._config.remove_option(
-                f"{coll.id}-{episode.episode_number}", section="EpisodeProgress"
-            )
+    def _remove_position_for_episode(self, episode: AnimeFile, anime: AnimeCollection, position: str):
+        self._config.remove_option(
+            f"{anime.id}-{episode.episode_number}", section="EpisodeProgress"
+        )
 
     def _refresh_anime_folder(self):
         try:

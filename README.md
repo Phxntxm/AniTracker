@@ -17,13 +17,13 @@ Simply double click the installer and follow along
 
 
 ```
-# Create anitracker folder in home folder and go into it
+# Create anitracker folder in home folder and go into it (this can be anywhere you want, this is just an example)
 mkdir ~/anitracker && cd ~/anitracker 
 # Download the tarball (this can also be found on the releases page)
 wget https://github.com/Phxntxm/AniTracker/releases/latest/download/anitracker.tar.gz
 # Untar it
 tar xzf anitracker.tar.gz
-# Remove the uneeded tarball
+# Remove the unneeded tarball
 rm anitracker.tar.gz
 # Run the finish setup script
 ./finish-setup.sh
