@@ -9,11 +9,12 @@ import time
 from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple, Any, Dict
 
 from anitracker import frozen_path, logger
+from anitracker.media import UserStatus
 
 if TYPE_CHECKING:
     from anitracker import AniTracker
     from anitracker.__main__ import MainWindow
-    from anitracker.media import AnimeCollection, AnimeFile, SubtitleTrack, UserStatus
+    from anitracker.media import AnimeCollection, AnimeFile, SubtitleTrack
 
     EPISODE_TYPE = List[Tuple[AnimeFile, Optional[SubtitleTrack]]]
 
@@ -189,30 +190,29 @@ class Player:
         return priority
 
     def _increment_episode(self, episode: AnimeFile):
-        coll = self._parent.get_anime(episode.title)
-        if coll is None:
-            return
-
         # First skip this if it's not the next episode
-        if coll.progress != episode.episode_number - 1:
+        if self.anime.progress != episode.episode_number - 1:
             return
 
         # The update variables that will be sent
         vars: Dict[str, Any] = {"progress": episode.episode_number}
 
         # Include completion if this is the last episode
-        if episode.episode_number == coll.episode_count:
-            if coll.user_status == UserStatus.REPEATING:
+        if episode.episode_number == self.anime.episode_count:
+            if self.anime.user_status == UserStatus.REPEATING:
                 vars["status"] = UserStatus.COMPLETED
-                vars["repeat"] = coll.repeat + 1
+                vars["repeat"] = self.anime.repeat + 1
             else:
                 vars["status"] = UserStatus.COMPLETED
                 vars["completed_at"] = datetime.now().date()
         # If this was the first episode, include started at
-        if coll.progress == 0 and coll.user_status is not UserStatus.REPEATING:
+        if (
+            self.anime.progress == 0
+            and self.anime.user_status is not UserStatus.REPEATING
+        ):
             vars["started_at"] = datetime.now().date()
 
-        coll.edit(self._parent._anilist, **vars)
+        self.anime.edit(self._parent._anilist, **vars)
 
         # Now trigger an update of the app
         self._window.anime_updater.start()
