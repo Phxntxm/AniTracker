@@ -21,7 +21,7 @@ jobs:
           pip install -r requirements.txt
       - name: Download binaries
         run: |
-          curl https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffprobe-4.2.1-linux-64.zip -o ffprobe.zip
+          wget https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffprobe-4.2.1-linux-64.zip -O ffprobe.zip
           sudo apt-get install mpv unzip
           sudo mv /usr/bin/mpv distribute/
           unzip ffprobe.zip
