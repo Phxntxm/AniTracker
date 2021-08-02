@@ -71,7 +71,9 @@ jobs:
         run: |
           7z x ${{ steps.mpv.outputs.filename }}
           7z x ${{ steps.ffprobe.outputs.filename }}
-          move ffprobe.exe mpv.exe mpv.com distribute
+          move ffprobe.exe distribute 
+          move mpv.exe distribute
+          move mpv.com distribute
       - name: Run pyinstaller
         run: pyinstaller distribute\windows.spec --distpath=dist\windows -y
       - name: Run makensis
