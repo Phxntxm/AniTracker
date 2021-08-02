@@ -1,0 +1,11 @@
+[Desktop Entry]
+
+Type=Application
+Version=1.2.0
+Name=AniTracker
+Comment=An anime tracking tool
+Path=
+Exec=anitracker
+Icon=anitracker
+Terminal=False
+Categories=Utility
