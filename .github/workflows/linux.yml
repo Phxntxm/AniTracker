@@ -1,0 +1,49 @@
+name: Create Release
+on:
+  push:
+    tags:
+      - v*
+jobs:
+  build:
+    name: Linux Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+      - name: Install Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pyinstaller
+          pip install -r requirements.txt
+      - name: Run pyinstaller
+        run: pyinstaller --distpath dist/linux -y distribute/linux.spec
+      - name: Copy scripts into distribution path
+        run: cp distribute/finish-setup.sh distribute/anitracker.desktop dist/linux/
+      - name: Replace version in desktop file
+        run: sed -i "s/Version=.*/Version=$(grep '__version__ = ' anitracker/__init__.py | cut -d\" -f 2)/" dist/linux/anitracker.desktop
+      - name: Create tarball
+        run: |
+          cd dist/linux/
+          tar czf ../anitracker.tar.gz ./*
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: anitracker.tar.gz
+          path: dist/linux/anitracker.tar.gz
+  release:
+    name: Create Release
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: anitracker.tar.gz
+      - name: Create Release
+        uses: ncipollo/release-action@v1.8.6
+        with:
+          draft: true
+          artifacts: "anitracker.tar.gz"
+          token: ${{ secrets.GITHUB_TOKEN }}
