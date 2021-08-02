@@ -57,6 +57,7 @@ class BackgroundThread(QThread):
 
             traceback.print_exc()
 
+
 def download_helper(url: str) -> Iterator[str]:
     # Open tmp file, don't delete after
     with tempfile.NamedTemporaryFile(delete=False) as f:
@@ -80,22 +81,35 @@ def download_helper(url: str) -> Iterator[str]:
             yield from do_update(f)
 
 
-def do_update(f: tempfile._TemporaryFileWrapper) -> Iterator[str]:
+def do_update(f: tempfile._TemporaryFileWrapper[bytes]) -> Iterator[str]:
     if frozen_path is None:
         return
+    # frozen_path is the path to the actual file installation. Not where it was untarred
+    # the tar and installing scripts are one directory higher
+    path = os.path.dirname(frozen_path)
 
     if sys.platform.startswith("linux"):
+
         # Untar
-        cmd = ["tar", "xzf", f.name, "-C", frozen_path]
-        subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            ["tar", "xzf", f.name, "-C", path],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         # Run the finish setup
-        cmd = [f"{os.path.dirname(frozen_path)}/finish-setup.sh"]
-        subprocess.run(cmd, stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            [f"{path}/finish-setup.sh"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            shell=True,
+        )
         yield "Installation prepared, restarting in 3 seconds"
         sleep(3)
         os.execv(f"{frozen_path}/anitracker", sys.argv)
     elif sys.platform.startswith("win32"):
-        shutil.move(f.name, frozen_path)
+        shutil.move(f.name, path)
         yield "Download finished, run installation file that has been downloaded"
 
 
@@ -126,7 +140,7 @@ def try_update(window: MainWindow):
         # Windows
         else:
             url = "https://github.com/Phxntxm/AniTracker/releases/latest/download/AniTrackerSetup.exe"
-    
+
         # Update status for each update in the download streamer
         for update in download_helper(url):
             status.status = update
@@ -136,6 +150,7 @@ def try_update(window: MainWindow):
 
     # After all is said and done, remove our status
     window.statuses.remove(status)
+
 
 def play_episode(
     anime: AnimeCollection,
@@ -162,7 +177,7 @@ def refresh_folder(window: MainWindow, *, loop_forever=False):
         window.statuses.append(status)
         window.app._refresh_anime_folder()
         window.statuses.remove(status)
-        window.reload_anime_eps.emit() # type: ignore
+        window.reload_anime_eps.emit()  # type: ignore
 
         # Simply break if we're not meant to loop forever
         if not loop_forever:
@@ -178,7 +193,7 @@ def connect_to_anilist(window: MainWindow):
     window.app._anilist.verify()
 
     if window.app._anilist.authenticated:
-        window.update_anilist_label.emit( # type: ignore
+        window.update_anilist_label.emit(  # type: ignore
             f"Connected account: {window.app._anilist.name}"
         )
         # If we authenticated at all, refresh animes
@@ -194,16 +209,15 @@ def update_from_anilist(window: MainWindow):
         window.statuses.append(status)
         # First refresh from anilist
         window.app.refresh_from_anilist()
-
-        window.handle_anime_updates.emit() # type: ignore
-
+        window.handle_anime_updates.emit()  # type: ignore
         window.statuses.remove(status)
 
 
 def status_label(window: MainWindow):
     while True:
-        window.update_label.emit() # type: ignore
+        window.update_label.emit()  # type: ignore
         sleep(0.1)
+
 
 def edit_anime(window: MainWindow, anime: Union[Anime, AnimeCollection], **kwargs):
     status = StatusHelper("Updating anime lists")
@@ -216,7 +230,7 @@ def search_nyaa(window: MainWindow, query: str):
     status = StatusHelper("Searching nyaa.si")
     window.statuses.append(status)
     results = list(window.app.search_nyaa(query))
-    window.nyaa_results.emit(results) # type: ignore
+    window.nyaa_results.emit(results)  # type: ignore
     window.statuses.remove(status)
 
 
@@ -226,7 +240,7 @@ def search_anilist(window: MainWindow, query: str):
     results = window.app._anilist.search_anime(query)
 
     for result in results:
-        window.insert_row_signal.emit(window.ui.AnilistSearchResults, result) # type: ignore
+        window.insert_row_signal.emit(window.ui.AnilistSearchResults, result)  # type: ignore
     window.statuses.remove(status)
 
 
