@@ -40,7 +40,8 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: anitracker.tar.gz
-          path: dist/linux/anitracker.tar.gz
+          path: dist/anitracker.tar.gz
+          if-no-files-found: error
   release:
     name: Create Release
     runs-on: ubuntu-latest
