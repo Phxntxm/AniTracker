@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import functools
-import os
 import sys
 from typing import Dict, List, Optional, Union
 
@@ -9,7 +8,7 @@ from PySide2.QtCore import *  # type: ignore
 from PySide2.QtGui import *  # type: ignore
 from PySide2.QtWidgets import *  # type: ignore
 
-from anitracker import __version__, logger
+from anitracker import logger
 from anitracker.anitracker import AniTracker
 from anitracker.background import *
 from anitracker.media import Anime, AnimeCollection, UserStatus
@@ -138,7 +137,9 @@ class MainWindow(QMainWindow):
             _table.horizontalHeader().setMinimumSectionSize(50)
             # Now set the custom context menu on the _table itself
             _table.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-            _table.customContextMenuRequested.connect(functools.partial(self.signals.open_anime_context_menu, _table))  # type: ignore
+            _table.customContextMenuRequested.connect(  # type: ignore
+                functools.partial(self.signals.open_anime_context_menu, _table)
+            )
             _table.viewport().installEventFilter(MouseFilter(_table, self))
             _table.itemClicked.connect(self.signals.change_banner)  # type: ignore
             _table.horizontalHeader().sectionResized.connect(  # type: ignore
