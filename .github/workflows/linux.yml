@@ -80,6 +80,12 @@ jobs:
         uses: joncloud/makensis-action@v3.6
         with:
           script-file: distribute\anitracker.nsi
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: AniTracker.exe
+          path: dist/AniTracker.exe
+          if-no-files-found: error
 
 
 
@@ -96,5 +102,5 @@ jobs:
         uses: ncipollo/release-action@v1.8.6
         with:
           draft: true
-          artifacts: "anitracker.tar.gz"
+          artifacts: "anitracker.tar.gz,AniTracker.exe"
           token: ${{ secrets.GITHUB_TOKEN }}
