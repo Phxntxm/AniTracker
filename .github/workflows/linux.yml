@@ -44,7 +44,7 @@ jobs:
           if-no-files-found: error
   windows-build:
     name: Windows Build
-    runds-on: windows-latest
+    runs-on: windows-latest
     strategy:
       matrix:
         python-version: [3.8]
