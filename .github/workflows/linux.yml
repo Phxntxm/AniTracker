@@ -4,7 +4,7 @@ on:
     tags:
       - v*
 jobs:
-  build:
+  linux-build:
     name: Linux Build
     runs-on: ubuntu-latest
     strategy:
@@ -37,6 +37,7 @@ jobs:
   release:
     name: Create Release
     runs-on: ubuntu-latest
+    needs: [linux-build]
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v2
