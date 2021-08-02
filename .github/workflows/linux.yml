@@ -36,6 +36,7 @@ jobs:
           path: dist/linux/anitracker.tar.gz
   release:
     name: Create Release
+    runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v2
