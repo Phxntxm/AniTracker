@@ -81,6 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [windows-build]
     steps:
+      - uses: actions/checkout@v2
       - name: Download makensis
         run: |
           sudo apt update
@@ -98,10 +99,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [linux-build, make-windows-installer]
     steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v2
-        with:
-          name: anitracker.tar.gz
+      - uses: actions/download-artifact@v2
       - name: Create Release
         uses: ncipollo/release-action@v1.8.6
         with:
