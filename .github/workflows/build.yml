@@ -112,6 +112,7 @@ jobs:
         run: |
           ls -lah
           ls -lah dist
+          ls -lah dist/windows/
           makensis distribute/anitracker.nsis
       - uses: actions/upload-artifact@v2
         with:
