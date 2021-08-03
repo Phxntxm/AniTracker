@@ -100,7 +100,7 @@ jobs:
         uses: joncloud/makensis-action@v3.6
         with:
           script-file: distribute/anitracker.nsis
-          additional-plugin-paths: ${{ github.workspace }}/NSIS_Plugins/Plugins
+          additional-plugin-paths: ${{ github.workspace }}/NSIS_Plugins
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
