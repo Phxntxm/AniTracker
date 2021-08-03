@@ -118,8 +118,8 @@ jobs:
           cd ../
       - uses: actions/upload-artifact@v2
         with:
-          name: AniTracker.exe
-          path: dist/AniTracker.exe
+          name: AniTrackerSetup.exe
+          path: dist/AniTrackerSetup.exe
           if-no-files-found: error
   release:
     name: Create Release
@@ -131,5 +131,5 @@ jobs:
         uses: ncipollo/release-action@v1.8.6
         with:
           draft: true
-          artifacts: "anitracker.tar.gz,AniTracker.exe"
+          artifacts: "anitracker.tar.gz,AniTrackerSetup.exe"
           token: ${{ secrets.GITHUB_TOKEN }}
