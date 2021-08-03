@@ -94,11 +94,10 @@ jobs:
           location: ${{ github.workspace }}
       - name: Extract FindProc plugin
         run: sudo 7z x -o"/usr/share/nsis/Plugins" "${{ github.workspace }}/findproc_plugin.zip"
+      - name: Set plugin permissions
+        run: sudo chown -R $(whoami) /usr/share/nsis/Plugins/
       - name: Create nsis installer
-        run: |
-          ls -lah
-          ls -lah distribute
-          makensis distribute/anitracker.nsis
+        run: makensis distribute/anitracker.nsis
       - uses: actions/upload-artifact@v2
         with:
           name: AniTracker.exe
