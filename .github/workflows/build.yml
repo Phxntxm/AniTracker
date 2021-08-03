@@ -82,12 +82,23 @@ jobs:
     needs: [windows-build]
     steps:
       - uses: actions/checkout@v2
+      - name: Download FindProc plugin
+        uses: carlosperate/download-file-action@v1.0.3
+        with:
+          file-url: https://nsis.sourceforge.io/mediawiki/images/3/3c/FindProc.zip
+          file-name: findproc_plugin.zip
+          location: ${{ github.workspace }}
       - name: Download makensis
         run: |
-          sudo apt update
-          sudo apt install -y nsis
-      - name: Run makensis
-        run: makensis distribute/anitracker.nsi
+          sudo apt-get update
+          sudo apt-get install -y nsis nsis-pluginapi
+      - name: Set plugin permissions
+        run: sudo chown -R $(whoami) /usr/share/nsis/Plugins/
+      - name: Create nsis installer
+        uses: joncloud/makensis-action@v3.6
+        with:
+          script-file: distribute/anitracker.nsis
+          additional-plugin-paths: ${{ github.workspace }}/NSIS_Plugins/Plugins
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
