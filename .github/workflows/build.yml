@@ -129,7 +129,7 @@ jobs:
       - uses: actions/download-artifact@v2
         name: Download setup .exe
         with:
-          name: AniTracker.exe
+          name: AniTrackerSetup.exe
       - uses: actions/download-artifact@v2
         name: Download tar.gz
         with:
