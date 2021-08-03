@@ -5,7 +5,7 @@
 Name "AniTracker"
 
 ; The file to write
-OutFile "..\dist\AniTrackerSetup.exe"
+OutFile "dist\AniTrackerSetup.exe"
 
 ; The default installation directory
 InstallDir $PROGRAMFILES\AniTracker
@@ -53,7 +53,7 @@ Section "AniTracker"
     SetOutPath $INSTDIR
 
     ; Copy the directory in
-    File /nonfatal /a /r "..\dist\windows\"
+    File /nonfatal /a /r "dist\windows\"
     ; Create an exe link
     CreateShortcut "$INSTDIR\AniTracker.lnk" "$INSTDIR\anitracker\anitracker.exe"
 
