@@ -127,6 +127,13 @@ jobs:
     needs: [linux-build, make-windows-installer]
     steps:
       - uses: actions/download-artifact@v2
+        name: Download setup .exe
+        with:
+          name: AniTracker.exe
+      - uses: actions/download-artifact@v2
+        name: Download tar.gz
+        with:
+          name: anitracker.tar.gz
       - name: Create Release
         uses: ncipollo/release-action@v1.8.6
         with:
