@@ -77,7 +77,7 @@ jobs:
       - name: Run pyinstaller
         run: pyinstaller distribute\windows.spec --distpath=dist\windows -y
       - name: Create zip
-        run: 7z a "AniTracker.7z" "dist\windows"
+        run: 7z a "AniTracker.7z" "dist\windows" -r
       - name: Upload zip
         uses: actions/upload-artifact@v2
         with:
