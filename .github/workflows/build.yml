@@ -115,10 +115,11 @@ jobs:
         run: |
           cd distribute/
           makensis anitracker.nsis
+          cd ../
       - uses: actions/upload-artifact@v2
         with:
           name: AniTracker.exe
-          path: ../dist/AniTracker.exe
+          path: dist/AniTracker.exe
           if-no-files-found: error
   release:
     name: Create Release
