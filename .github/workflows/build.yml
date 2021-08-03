@@ -76,6 +76,14 @@ jobs:
           move mpv.com distribute
       - name: Run pyinstaller
         run: pyinstaller distribute\windows.spec --distpath=dist\windows -y
+      - name: Create zip
+        run: 7z a "AniTracker.7z" "dist\windows"
+      - name: Upload zip
+        uses: actions/upload-artifact@v2
+        with:
+          name: AniTracker.7z
+          path: AniTracker.7z
+          if-no-files-found: error
   make-windows-installer:
     name: Make Windows Installer
     runs-on: ubuntu-latest
@@ -94,8 +102,17 @@ jobs:
           location: ${{ github.workspace }}
       - name: Extract FindProc plugin
         run: sudo 7z x -o"/usr/share/nsis/Plugins/x86-ansi/" "${{ github.workspace }}/findproc_plugin.zip"
+      - name: Download zip
+        uses: actions/download-artifact@v2
+        with:
+          name: AniTracker.7z
+      - name: Unzip
+        run: 7z x "AniTracker.7z"
       - name: Create nsis installer
-        run: makensis distribute/anitracker.nsis
+        run: |
+          ls -lah
+          ls -lah dist
+          makensis distribute/anitracker.nsis
       - uses: actions/upload-artifact@v2
         with:
           name: AniTracker.exe
