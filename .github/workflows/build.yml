@@ -107,7 +107,10 @@ jobs:
         with:
           name: AniTracker.7z
       - name: Unzip
-        run: 7z x "AniTracker.7z"
+        run: |
+          7z x "AniTracker.7z"
+          find dist/ -type d -exec chmod 755 {} \;
+          find dist/ -type f -exec chmod 644 {} \;
       - name: Create nsis installer
         run: |
           ls -lah
