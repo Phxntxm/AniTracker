@@ -22,7 +22,7 @@ jobs:
       - name: Download binaries
         run: |
           sudo apt-get update
-          sudo apt-get install ffmpeg libcdio19
+          sudo apt-get install ffmpeg libcdio18
           sudo apt-get install mpv unzip
           sudo mv /usr/bin/mpv /usr/bin/ffprobe /usr/bin/ffmpeg distribute/
       - name: Run pyinstaller
