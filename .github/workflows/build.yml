@@ -22,8 +22,8 @@ jobs:
       - name: Download binaries
         run: |
           sudo apt-get update
-          sudo apt-get install ffmpeg libcdio18
-          sudo apt-get install mpv unzip
+          sudo apt-get upgrade
+          sudo apt-get install ffmpeg mpv unzip
           sudo mv /usr/bin/mpv /usr/bin/ffprobe /usr/bin/ffmpeg distribute/
       - name: Run pyinstaller
         run: pyinstaller --distpath dist/linux -y distribute/linux.spec
