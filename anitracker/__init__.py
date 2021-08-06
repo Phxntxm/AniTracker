@@ -5,6 +5,17 @@ __version__ = "1.3.1"
 user_agent = f"AniTracker/{__version__} (Language=py)"
 frozen_path: typing.Optional[str] = getattr(sys, "_MEIPASS", None)
 
+ffprobe_cmd = "ffprobe"
+ffmpeg_cmd = "ffmpeg"
+
+if frozen_path is not None:
+    if sys.platform.startswith("win32"):
+        ffprobe_cmd = f"{frozen_path}\\ffprobe.exe"
+        ffmpeg_cmd = f"{frozen_path}\\ffmpeg.exe"
+    elif sys.platform.startswith("linux"):
+        ffprobe_cmd = f"{frozen_path}/ffprobe"
+        ffmpeg_cmd = f"{frozen_path}/ffprobe"
+
 
 def setup_logger():
 

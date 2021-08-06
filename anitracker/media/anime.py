@@ -9,9 +9,9 @@ from dataclasses import dataclass
 from datetime import date
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
-from anitracker import frozen_path, logger
+from anitracker import logger, ffprobe_cmd, ffmpeg_cmd
 from anitracker.media.media import BaseAnime, BaseCollection
-from anitracker.utilities import MediaStatus, UserStatus
+from anitracker.utilities import UserStatus
 
 if TYPE_CHECKING:
     from anitracker.sync import AniList
@@ -22,15 +22,6 @@ __all__ = (
     "AnimeFile",
     "SubtitleTrack",
 )
-
-
-ffprobe_cmd = "ffprobe"
-
-if frozen_path is not None:
-    if sys.platform.startswith("win32"):
-        ffprobe_cmd = f"{frozen_path}\\ffprobe.exe"  # type: ignore
-    elif sys.platform.startswith("linux"):
-        ffprobe_cmd = f"{frozen_path}/ffprobe"  # type: ignore
 
 
 def ffprobe_data(file: str) -> Dict:
@@ -244,7 +235,7 @@ class AnimeFile:
         if self._thumbnail is None:
             with tempfile.NamedTemporaryFile(suffix=".jpg") as f:
                 cmd = [
-                    "ffmpeg",
+                    ffmpeg_cmd,
                     "-ss",
                     "00:03:30.00",
                     "-i",
