@@ -21,7 +21,7 @@ jobs:
           pip install -r requirements.txt
       - name: Download binaries
         run: |
-          supo apt-get update
+          sudo apt-get update
           sudo apt-get install ffmpeg
           sudo apt-get install mpv unzip
           sudo mv /usr/bin/mpv /usr/bin/ffprobe distribute/
