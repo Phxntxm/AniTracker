@@ -21,11 +21,8 @@ jobs:
           pip install -r requirements.txt
       - name: Download binaries
         run: |
-          wget https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffprobe-4.2.1-linux-64.zip -O ffprobe.zip
-          sudo apt-get install mpv unzip
-          sudo mv /usr/bin/mpv distribute/
-          unzip ffprobe.zip
-          mv ffprobe distribute/
+          sudo apt-get install ffmpeg mpv unzip
+          sudo mv /usr/bin/mpv /usr/bin/ffprobe distribute/
       - name: Run pyinstaller
         run: pyinstaller --distpath dist/linux -y distribute/linux.spec
       - name: Copy scripts into distribution path
