@@ -1,4 +1,6 @@
-from typing import Any, Dict, Union, List
+from __future__ import annotations
+
+from typing import Any, Dict, Union, List, TYPE_CHECKING
 import urllib.parse
 import webbrowser
 
@@ -8,6 +10,9 @@ import json
 from anitracker import user_agent
 from anitracker.gql import queries
 from anitracker.media import Anime
+
+if TYPE_CHECKING:
+    from anitracker.config import Config
 
 BASE_URL = "https://anilist.co/api/v2"
 GQL_URL = "https://graphql.anilist.co"
@@ -40,7 +45,7 @@ class AniList:
     def _get_gql_query(self, name: str):
         return getattr(queries, name)
 
-    def from_config(self, config):
+    def from_config(self, config: Config):
         try:
             token = config["access-token"]
         except KeyError:
@@ -71,10 +76,18 @@ class AniList:
         url = f"{BASE_URL}/oauth/authorize?{urllib.parse.urlencode(payload)}"
         webbrowser.open(url)
 
-    def get_collection(self) -> Dict[Any, Any]:
-        ret = self.gql("media_collection", variables={"userName": self.name})
+    def _get_collection(self, _type: str) -> Dict[Any, Any]:
+        ret = self.gql(
+            "media_collection", variables={"userName": self.name, "type": _type}
+        )
 
         return ret
+
+    def get_anime(self) -> Dict[Any, Any]:
+        return self._get_collection("ANIME")
+
+    def get_manga(self) -> Dict[Any, Any]:
+        return self._get_collection("MANGA")
 
     def verify(self) -> Dict[Any, Any]:
         ret = self.gql("viewer")
@@ -116,6 +129,6 @@ class AniList:
             if result["format"] in ["MANGA", "NOVEL", "ONE_SHOT"]:
                 continue
 
-            animes.append(Anime.from_data(result))
+            animes.append(Anime.from_anilist(result))
 
         return animes

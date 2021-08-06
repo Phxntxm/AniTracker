@@ -16,8 +16,9 @@ from PySide2.QtGui import *  # type: ignore
 from PySide2.QtWidgets import *  # type: ignore
 
 from anitracker import __version__
-from anitracker.ui import Ui_About, Ui_Settings
-from anitracker.media import Anime, AnimeCollection, UserStatus
+from anitracker.ui import Ui_About, Ui_Settings, Ui_animeEpisode
+from anitracker.media import Anime, AnimeCollection, AnimeFile
+from anitracker.utilities import UserStatus, QProgressIndicator
 from anitracker.background import *
 
 if TYPE_CHECKING:
@@ -79,6 +80,32 @@ class LinkWidgetItem(QTableWidgetItem):
         self.magnet = magnet
 
 
+class EpisodeWidget(QWidget):
+    def __init__(
+        self,
+        window: MainWindow,
+        file: AnimeFile,
+        anime: AnimeCollection,
+        parent: Optional[QWidget] = None,
+    ) -> None:
+        self._window = window
+        self._file = file
+        self._anime = anime
+
+        super().__init__(parent=parent)
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+        self._playing_episode = BackgroundThread(
+            play_episode,
+            self._anime,
+            self._file.episode_number,
+            self._window,
+            start_playlist=self._anime.progress == self._file.episode_number - 1,
+        )
+        self._playing_episode.start()
+        return super().mouseDoubleClickEvent(event)
+
+
 class MouseFilter(QObject):
     def __init__(self, table: QTableWidget, parent: Optional[QObject] = None) -> None:
         super().__init__(parent=parent)
@@ -134,6 +161,7 @@ class MouseFilter(QObject):
 class SignalConnector:
     def __init__(self, window: MainWindow) -> None:
         self.window = window
+        self._episodes = []
 
     # Settings action was clicked
     def open_settings(self):
@@ -292,7 +320,6 @@ class SignalConnector:
             remove = menu.addAction("Remove from list")
 
         menu.addSeparator()
-
 
         if isinstance(anime, AnimeCollection):
             # Add episode options
@@ -572,18 +599,94 @@ class SignalConnector:
     def change_page(self, row: int):
         self.window.ui.AnimePages.setCurrentIndex(row)
 
-    # Change banner
-    def change_banner(self, item: AnimeWidgetItem):
-        try:
-            self.window.ui.BannerViewer.setUrl(QUrl(item.anime.cover_image))
-        except AttributeError:
-            # This is a link widget item, we don't want to do anything on click
-            pass
+    # An anime item was clicked
+    def anime_clicked(self, item: Union[AnimeWidgetItem, LinkWidgetItem]):
+        # Links don't show the banner, nor do they show episodes
+        if isinstance(item, LinkWidgetItem):
+            self.window.hide_episode_list()
+            return
+
+        # Otherwise show the banner
+        self.window.ui.BannerViewer.setUrl(QUrl(item.anime.cover_image))
+
+        # Only anime collections (ones on lists) are things we care about for episodes
+        if not isinstance(item.anime, AnimeCollection):
+            self.window.hide_episode_list()
+            return
+
+        ew = self.window.ui.episodesWidget
+
+        # Clear all the children of the episode layout
+        for index in range(ew.layout().count()):
+            child = ew.layout().itemAt(index)
+            child.widget().deleteLater()
+
+        # Sort all the episodes
+        episodes = sorted(
+            self.window.app.get_episodes(item.anime), key=lambda e: e.episode_number
+        )
+
+        # If there are none, then we can't show them of course
+        if not episodes:
+            self.window.hide_episode_list()
+            return
+
+        # If there are, show the episode list and add all the episodes
+        self.window.show_episode_list()
+        self._progress = QProgressIndicator(ew)
+        self._progress.startAnimation()
+        ew.layout().addWidget(self._progress)
+
+        self.thumbnail_generator = BackgroundThread(
+            generate_thumbnails, self.window, episodes, item.anime
+        )
+        self.thumbnail_generator.start()
+
+    # Thumbnails generated, add to widget
+    def add_episodes_to_episode_list(
+        self, episodes: List[AnimeFile], anime: AnimeCollection
+    ):
+        ew = self.window.ui.episodesWidget
+
+        # Clear the loading widget
+        self._progress.deleteLater()
+
+        for episode in episodes:
+            # Create widget under episodes widget
+            widget = EpisodeWidget(self.window, episode, anime, ew)
+            widget.show()
+            widget.setParent(ew)
+            ew.layout().addWidget(widget)
+            # Setup episode widget
+            ep_widget = Ui_animeEpisode()
+            ep_widget.setupUi(widget)
+            # The label's width cannot be garnered until it shows, so just show it now
+            ep_widget.animeEpisodeLabel.show()
+            # Set the label
+            l = ""
+            fm = QFontMetrics(ep_widget.animeEpisodeLabel.font())
+            title = f"Episode {episode.episode_number}"
+            ep_widget.animeEpisodeLabel.setToolTip(title)
+            if episode.episode_title and episode.episode_title != "Unknown":
+                title += f" - {episode.episode_title}"
+            for c in title:
+                l += c
+                if fm.width(l) >= ep_widget.animeEpisodeLabel.width() - 10:
+                    l = f"{l[:-4]}..."
+                    break
+
+            ep_widget.animeEpisodeLabel.setText(l)
+            # Add the pixmap from generated thumbnail
+            pixmap = QPixmap()
+            pixmap.loadFromData(QByteArray(episode.thumbnail))
+            ep_widget.animeThumbnail.setPixmap(pixmap)
 
     # Search anilist
     def search_anilist(self):
         self.window.ui.AnilistSearchResults.setRowCount(0)
-        self.anilist_search_task = BackgroundThread(search_anilist, self.window, self.window.ui.AnilistSearchLineEdit.text())
+        self.anilist_search_task = BackgroundThread(
+            search_anilist, self.window, self.window.ui.AnilistSearchLineEdit.text()
+        )
         self.anilist_search_task.start()
 
     # Start nyaa search

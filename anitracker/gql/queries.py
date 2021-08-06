@@ -1,6 +1,6 @@
 media_collection = """
-query ($userName: String) {
-  MediaListCollection (userName: $userName, type: ANIME) {
+query ($userName: String, $type: MediaType) {
+  MediaListCollection (userName: $userName, type: $type) {
     lists {
       entries {
         id
@@ -46,6 +46,8 @@ query ($userName: String) {
           startDate {year month day}
           endDate {year month day}
           episodes
+          chapters
+          volumes
           averageScore
         }
       }

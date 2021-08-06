@@ -1,44 +1,27 @@
 from __future__ import annotations
-import json
 
+import json
 import re
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass
 from datetime import date
-from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
-from anitracker import logger, frozen_path
+from anitracker import frozen_path, logger
+from anitracker.media.media import BaseAnime, BaseCollection
+from anitracker.utilities import MediaStatus, UserStatus
 
 if TYPE_CHECKING:
     from anitracker.sync import AniList
 
 __all__ = (
-    "UserStatus",
     "Anime",
-    "AnimeStatus",
     "AnimeCollection",
     "AnimeFile",
     "SubtitleTrack",
 )
-
-
-class UserStatus(Enum):
-    CURRENT = auto()
-    PLANNING = auto()
-    COMPLETED = auto()
-    DROPPED = auto()
-    PAUSED = auto()
-    REPEATING = auto()
-
-
-class AnimeStatus(Enum):
-    FINISHED = auto()
-    RELEASING = auto()
-    NOT_YET_RELEASED = auto()
-    CANCELLED = auto()
-    HIATUS = auto()
 
 
 ffprobe_cmd = "ffprobe"
@@ -119,24 +102,7 @@ class NyaaResult:
 
 
 @dataclass
-class Anime:
-    id: int
-    romaji_title: str
-    english_title: str
-    native_title: str
-    preferred_title: str
-    anime_status: AnimeStatus
-    description: str
-    anime_start_date: Union[date, None]
-    anime_end_date: Union[date, None]
-    episode_count: int
-    average_score: int
-    season: str
-    genres: List[str]
-    tags: List[Tuple[str, int]]
-    studio: str
-    cover_image: str
-
+class Anime(BaseAnime):
     def __repr__(self) -> str:
         return f"<Anime id={self.id} title={self.english_title}>"
 
@@ -146,218 +112,18 @@ class Anime:
         return self.id
 
     def __eq__(self, o: object) -> bool:
-        return isinstance(o, AnimeCollection) and self.id == o.id
-
-    @property
-    def titles(self) -> List[str]:
-        return [self.english_title, self.romaji_title, self.native_title]
-
-    @classmethod
-    def from_data(cls, data: Dict) -> Anime:
-        start = (
-            date(**data["startDate"])
-            if all(value for value in data["startDate"].values())
-            else None
-        )
-        end = (
-            date(**data["endDate"])
-            if all(value for value in data["endDate"].values())
-            else None
-        )
-        studios = [
-            e["node"]["name"]
-            for e in data["studios"]["edges"]
-            if e["node"]["isAnimationStudio"]
-        ]
-        if studios:
-            studio = studios[0]
-        else:
-            # Just get the first studio if we can't find an animation studio
-            if data["studios"]["edges"]:
-                studio = data["studios"]["edges"][0]
-            else:
-                studio = ""
-
-        inst = cls(
-            data["id"],
-            data["title"]["romaji"] or "",
-            data["title"]["english"] or "",
-            data["title"]["native"] or "",
-            data["title"]["userPreferred"] or "",
-            AnimeStatus[data["status"]],
-            data["description"],
-            start,
-            end,
-            data["episodes"] or 0,
-            data["averageScore"],
-            f"{data['season']} {data['seasonYear']}",
-            data["genres"],
-            [
-                (tag["name"], tag["rank"])
-                for tag in data["tags"]
-                if not tag["isMediaSpoiler"]
-            ],
-            studio,
-            data["coverImage"]["large"],
-        )
-
-        return inst
+        return isinstance(o, Anime) and self.id == o.id
 
     def edit(self, sync: AniList, *, status: UserStatus):
         sync.gql("update_entry", {"mediaId": self.id, "status": status.name})
 
 
 @dataclass
-class AnimeCollection(Anime):
-    _list_id: int
-    user_status: UserStatus
-    score: float
-    progress: int
-    repeat: int
-    updated_at: Union[date, None]
-    notes: str
-    user_start_date: Union[date, None]
-    user_end_date: Union[date, None]
-
+class AnimeCollection(Anime, BaseCollection):
     def __repr__(self) -> str:
         return f"<AnimeCollection(id={self.id} user_status={self.user_status} title={self.english_title})>"
 
     __str__ = __repr__
-
-    @classmethod
-    def from_data(cls, data: Dict) -> AnimeCollection:
-        start = (
-            date(**data["media"]["startDate"])
-            if all(value for value in data["media"]["startDate"].values())
-            else None
-        )
-        end = (
-            date(**data["media"]["endDate"])
-            if all(value for value in data["media"]["endDate"].values())
-            else None
-        )
-        user_start = (
-            date(**data["startedAt"])
-            if all(value for value in data["startedAt"].values())
-            else None
-        )
-        user_end = (
-            date(**data["completedAt"])
-            if all(value for value in data["completedAt"].values())
-            else None
-        )
-        studios = [
-            e["node"]["name"]
-            for e in data["media"]["studios"]["edges"]
-            if e["node"]["isAnimationStudio"]
-        ]
-        if studios:
-            studio = studios[0]
-        else:
-            # Just get the first studio if we can't find an animation studio
-            if data["media"]["studios"]["edges"]:
-                studio = data["media"]["studios"]["edges"][0]
-            else:
-                studio = ""
-        inst = cls(
-            data["mediaId"],
-            data["media"]["title"]["romaji"] or "",
-            data["media"]["title"]["english"] or "",
-            data["media"]["title"]["native"] or "",
-            data["media"]["title"]["userPreferred"] or "",
-            AnimeStatus[data["media"]["status"]],
-            data["media"]["description"],
-            start,
-            end,
-            data["media"]["episodes"] or 0,
-            data["media"]["averageScore"],
-            f"{data['media']['season']} {data['media']['seasonYear']}",
-            data["media"]["genres"],
-            [
-                (tag["name"], tag["rank"])
-                for tag in data["media"]["tags"]
-                if not tag["isMediaSpoiler"]
-            ],
-            studio,
-            data["media"]["coverImage"]["large"],
-            data["id"],
-            UserStatus[data["status"]],
-            data["score"],
-            data["progress"],
-            data["repeat"],
-            date.fromtimestamp(data["updatedAt"]) if data["updatedAt"] else None,
-            data["notes"],
-            user_start,
-            user_end,
-        )
-
-        return inst
-
-    def update_data(self, data: Dict):
-        start = (
-            date(**data["media"]["startDate"])
-            if all(value for value in data["media"]["startDate"].values())
-            else None
-        )
-        end = (
-            date(**data["media"]["endDate"])
-            if all(value for value in data["media"]["endDate"].values())
-            else None
-        )
-        user_start = (
-            date(**data["startedAt"])
-            if all(value for value in data["startedAt"].values())
-            else None
-        )
-        user_end = (
-            date(**data["completedAt"])
-            if all(value for value in data["completedAt"].values())
-            else None
-        )
-        studios = [
-            e["node"]["name"]
-            for e in data["media"]["studios"]["edges"]
-            if e["node"]["isAnimationStudio"]
-        ]
-        if studios:
-            studio = studios[0]
-        else:
-            # Just get the first studio if we can't find an animation studio
-            if data["media"]["studios"]["edges"]:
-                studio = data["media"]["studios"]["edges"][0]
-            else:
-                studio = ""
-
-        self._list_id = data["id"]
-        self.id = data["mediaId"]
-        self.user_status = UserStatus[data["status"]]
-        self.score = data["score"]
-        self.progress = data["progress"]
-        self.repeat = data["repeat"]
-        self.updated_at = (
-            date.fromtimestamp(data["updatedAt"]) if data["updatedAt"] else None
-        )
-        self.romaji_title = data["media"]["title"]["romaji"] or ""
-        self.english_title = data["media"]["title"]["english"] or ""
-        self.native_title = data["media"]["title"]["native"] or ""
-        self.preferred_title = data["media"]["title"]["userPreferred"] or ""
-        self.anime_status = AnimeStatus[data["media"]["status"]]
-        self.description = data["media"]["description"]
-        self.notes = data["notes"]
-        self.anime_start_date = start
-        self.anime_end_date = end
-        self.user_start_date = user_start
-        self.user_end_date = user_end
-        self.episode_count = data["media"]["episodes"] or 0
-        self.average_score = data["media"]["averageScore"]
-        self.season = f"{data['media']['season']} {data['media']['seasonYear']}"
-        self.genres = data["media"]["genres"]
-        self.tags = [
-            (tag["name"], tag["rank"])
-            for tag in data["media"]["tags"]
-            if not tag["isMediaSpoiler"]
-        ]
-        self.studio = studio
 
     def edit(
         self,
@@ -433,6 +199,7 @@ class AnimeFile:
     file: str
     episode_number: int
     subtitles: List[SubtitleTrack]
+    _thumbnail: Optional[bytes]
 
     def __repr__(self) -> str:
         return f"<AnimeFile title={self.title} episode_number={self.episode_number}>"
@@ -453,6 +220,7 @@ class AnimeFile:
             inst.file = data["file_name"]
             inst.episode_number = int(_episode)
             inst.subtitles = []
+            inst._thumbnail = None
 
             return inst
 
@@ -470,6 +238,34 @@ class AnimeFile:
             raise TypeError(
                 f"Could not parse data, expected list or string as episode, got {type(episode)}"
             )
+
+    @property
+    def thumbnail(self):
+        if self._thumbnail is None:
+            with tempfile.NamedTemporaryFile(suffix=".jpg") as f:
+                cmd = [
+                    "ffmpeg",
+                    "-ss",
+                    "00:03:30.00",
+                    "-i",
+                    self.file,
+                    "-vframes",
+                    "1",
+                    "-y",
+                    f.name,
+                ]
+                subprocess.run(
+                    cmd,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    stdin=subprocess.DEVNULL,
+                )
+                f.seek(0)
+                image = f.read()
+
+            self._thumbnail = image
+
+        return self._thumbnail
 
     def load_subtitles(self, standalone_subs: Dict[Tuple[str, int], str]):
         self.subtitles = []

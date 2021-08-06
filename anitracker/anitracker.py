@@ -1,15 +1,8 @@
 from __future__ import annotations
 
-import re
-import shlex
-import subprocess
-import sys
-import time
-from datetime import datetime
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
-    Any,
     Dict,
     Generator,
     Iterator,
@@ -25,10 +18,10 @@ from bs4 import BeautifulSoup as bs
 from bs4.element import Tag
 from rapidfuzz import fuzz
 
-from anitracker import user_agent, logger, frozen_path
+from anitracker import user_agent, logger
 from anitracker.config import Config
-from anitracker.media import AnimeCollection, AnimeFile, UserStatus
-from anitracker.media.anime import NyaaResult, SubtitleTrack
+from anitracker.media import AnimeCollection, AnimeFile, MangaCollection
+from anitracker.media.anime import NyaaResult
 from anitracker.sync import AniList
 from anitracker.player import Player
 
@@ -146,22 +139,22 @@ class AniTracker:
     def refresh_from_anilist(self):
         # First get all the media
         logger.debug(f"Retrieving info from anilist")
-        media = self._anilist.get_collection()
+        animes = self._anilist.get_anime()
+        mangas = self._anilist.get_manga()
 
-        # Now, there is no harm in leaving stale data... so all we're going to do is update
-        # the ones we find, and add the new ones
+        _animes: Dict[int, AnimeCollection] = {}
+        _mangas: Dict[int, MangaCollection] = {}
 
         # The lists are separated by status
-        for l in media["data"]["MediaListCollection"]["lists"]:
+        for l in animes["data"]["MediaListCollection"]["lists"]:
             for entry in l["entries"]:
-                old = self._animes.get(entry["mediaId"])
+                _animes[entry["id"]] = AnimeCollection.from_anilist(entry)
+        for l in mangas["data"]["MediaListCollection"]["lists"]:
+            for entry in l["entries"]:
+                _mangas[entry["id"]] = MangaCollection.from_anilist(entry)
 
-                if old:
-                    old.update_data(entry)
-                else:
-                    anime = AnimeCollection.from_data(entry)
-
-                    self._animes[anime.id] = anime
+        self._animes = _animes
+        self._mangas = _mangas
 
     def get_episodes(self, anime: AnimeCollection) -> List[AnimeFile]:
         l = []

@@ -9,7 +9,7 @@ import time
 from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple, Any, Dict
 
 from anitracker import frozen_path, logger
-from anitracker.media import UserStatus
+from anitracker.utilities import UserStatus
 
 if TYPE_CHECKING:
     from anitracker import AniTracker

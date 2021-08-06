@@ -5,15 +5,17 @@ import sys
 from typing import Dict, List, Optional, Union
 
 from PySide2.QtCore import *  # type: ignore
+from PySide2.QtCore import __file__ as QTCoreFile
 from PySide2.QtGui import *  # type: ignore
 from PySide2.QtWidgets import *  # type: ignore
 
 from anitracker import logger
 from anitracker.anitracker import AniTracker
 from anitracker.background import *
-from anitracker.media import Anime, AnimeCollection, UserStatus
+from anitracker.media import Anime, AnimeCollection
 from anitracker.signals import SignalConnector, MouseFilter
 from anitracker.ui import Ui_AnimeApp, Ui_AnimeInfo
+from anitracker.utilities import UserStatus
 
 
 class MainWindow(QMainWindow):
@@ -25,11 +27,13 @@ class MainWindow(QMainWindow):
     update_label = Signal()
     handle_anime_updates = Signal()
     nyaa_results = Signal(list)
+    add_episodes_to_widget = Signal(list, AnimeCollection)
 
     # Setup stuff
     def __init__(self, qapp: QApplication):
         super().__init__()
         self._qapp = qapp
+        self._showing_episodes = False
         self.setup()
         self.setup_threads()
         self.setup_tables()
@@ -141,7 +145,7 @@ class MainWindow(QMainWindow):
                 functools.partial(self.signals.open_anime_context_menu, _table)
             )
             _table.viewport().installEventFilter(MouseFilter(_table, self))
-            _table.itemClicked.connect(self.signals.change_banner)  # type: ignore
+            _table.itemClicked.connect(self.signals.anime_clicked)  # type: ignore
             _table.horizontalHeader().sectionResized.connect(  # type: ignore
                 functools.partial(self.signals.resized_column, _table)
             )
@@ -226,6 +230,7 @@ class MainWindow(QMainWindow):
         self.reload_anime_eps.connect(self.signals.handle_anime_updates)  # type: ignore
         self.update_ui_signal.connect(self.signals.handle_ui_update)  # type: ignore
         self.handle_anime_updates.connect(self.signals.handle_anime_updates)  # type: ignore
+        self.add_episodes_to_widget.connect(self.signals.add_episodes_to_episode_list)  # type: ignore
         self.ui.AnilistSearchButton.clicked.connect(self.signals.search_anilist)  # type: ignore
         self.ui.NyaaSearchButton.clicked.connect(self.signals.search_nyaa)  # type: ignore
         self.ui.AnimeListChooser.currentRowChanged.connect(self.signals.change_page)  # type: ignore
@@ -257,6 +262,16 @@ class MainWindow(QMainWindow):
             self.ui.DroppedTable,
             self.ui.PausedTable,
         ]
+
+    def hide_episode_list(self):
+        if self._showing_episodes:
+            self.setFixedSize(*self._orig_size)  # type: ignore
+            self._showing_episodes = False
+
+    def show_episode_list(self):
+        if not self._showing_episodes:
+            self.setFixedSize(*self._with_eps)  # type: ignore
+            self._showing_episodes = True
 
     def get_table(self, status: UserStatus) -> QTableWidget:
         if status is UserStatus.COMPLETED:
@@ -349,6 +364,8 @@ def main():
     window = MainWindow(app)
     window.setFixedSize(window.size())
     window.show()
+    window._orig_size = (window.width(), window.height())  # type: ignore
+    window._with_eps = (window.width() + 310, window.height())  # type: ignore
 
     ret = app.exec_()
     window.stop_threads()

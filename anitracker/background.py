@@ -8,7 +8,7 @@ import sys
 import tempfile
 import traceback
 from time import sleep
-from typing import Any, TYPE_CHECKING, Optional, Union, Callable, Iterator
+from typing import Any, TYPE_CHECKING, Optional, Union, Callable, Iterator, List
 
 import requests
 from PySide2.QtCore import *  # type: ignore
@@ -16,7 +16,7 @@ from PySide2.QtGui import *  # type: ignore
 from PySide2.QtWidgets import *  # type: ignore
 
 from anitracker import logger, frozen_path
-from anitracker.media import AnimeCollection, Anime
+from anitracker.media import AnimeCollection, Anime, AnimeFile
 
 if TYPE_CHECKING:
     from anitracker.__main__ import MainWindow
@@ -33,6 +33,7 @@ __all__ = (
     "edit_anime",
     "search_nyaa",
     "search_anilist",
+    "generate_thumbnails",
     "StatusHelper",
 )
 
@@ -242,6 +243,17 @@ def search_anilist(window: MainWindow, query: str):
     for result in results:
         window.insert_row_signal.emit(window.ui.AnilistSearchResults, result)  # type: ignore
     window.statuses.remove(status)
+
+
+def generate_thumbnails(
+    window: MainWindow, episodes: List[AnimeFile], anime: AnimeCollection
+):
+    for ep in episodes:
+        # The property handles caching thumbnails, just access to trigger it
+        ep.thumbnail
+
+    # Once we're done emit the update to add to scroll area
+    window.add_episodes_to_widget.emit(episodes, anime)  # type: ignore
 
 
 class StatusHelper:
