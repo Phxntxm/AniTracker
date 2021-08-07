@@ -1,7 +1,7 @@
 import sys
 import typing
 
-__version__ = "1.3.3"
+__version__ = "1.3.4"
 user_agent = f"AniTracker/{__version__} (Language=py)"
 frozen_path: typing.Optional[str] = getattr(sys, "_MEIPASS", None)
 
