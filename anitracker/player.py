@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from datetime import datetime
 import re
-import shlex
 import subprocess
+import shlex
 import sys
 import time
-from typing import TYPE_CHECKING, Iterator, List, Optional, Tuple, Any, Dict
+from typing import TYPE_CHECKING, List, Optional, Tuple, Any, Dict
 
 from anitracker import frozen_path, logger
 from anitracker.utilities import UserStatus
@@ -61,8 +61,9 @@ class Player:
         # Add the mpv command
         if frozen_path is not None:
             cmd.extend(shlex.split(f"{frozen_path}/mpv", posix=not sys.platform.startswith("win32")))  # type: ignore
+        # For testing some
         else:
-            cmd.append("mpv")
+            cmd.append("/home/phantom/anitracker/anitracker/mpv")
 
         # Add the language priority
         cmd.append("--alang=jpn,en")
@@ -104,7 +105,6 @@ class Player:
             self.mpv,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
-            stdin=subprocess.DEVNULL,
         )
 
         perc: int = 0
@@ -119,6 +119,7 @@ class Player:
                 # Skip if blank
                 if not stdout:
                     continue
+                logger.info(stdout)
                 if match := re.findall(
                     r"Perc: ::(\d+):: Pos: ::(\d{2}:\d{2}:\d{2})::", stdout
                 ):

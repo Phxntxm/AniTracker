@@ -3,7 +3,6 @@ from __future__ import annotations
 import functools
 import os
 import shutil
-import subprocess
 import sys
 import tempfile
 import traceback
@@ -17,6 +16,7 @@ from PySide2.QtWidgets import *  # type: ignore
 
 from anitracker import logger, frozen_path
 from anitracker.media import AnimeCollection, Anime, AnimeFile
+from anitracker.utilities import subprocess
 
 if TYPE_CHECKING:
     from anitracker.__main__ import MainWindow
@@ -92,20 +92,9 @@ def do_update(f: tempfile._TemporaryFileWrapper[bytes]) -> Iterator[str]:
     if sys.platform.startswith("linux"):
 
         # Untar
-        subprocess.run(
-            ["tar", "xzf", f.name, "-C", path],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        subprocess.run(["tar", "xzf", f.name, "-C", path])
         # Run the finish setup
-        subprocess.run(
-            [f"{path}/finish-setup.sh"],
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            shell=True,
-        )
+        subprocess.run([f"{path}/finish-setup.sh"], shell=True)
         yield "Installation prepared, restarting in 3 seconds"
         sleep(3)
         os.execv(f"{frozen_path}/anitracker", sys.argv)

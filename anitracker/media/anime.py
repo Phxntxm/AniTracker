@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from anitracker import logger, ffprobe_cmd, ffmpeg_cmd
 from anitracker.media.media import BaseAnime, BaseCollection
 from anitracker.utilities import UserStatus
+from anitracker.utilities import subprocess as sp
 
 if TYPE_CHECKING:
     from anitracker.sync import AniList
@@ -34,18 +35,15 @@ def ffprobe_data(file: str) -> Dict:
         stdin = subprocess.DEVNULL
         shell = True
 
-    p = subprocess.Popen(
+    out, _ = sp.run(
         args,
         stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
         stdin=stdin,
         shell=shell,
     )
 
-    out, _ = p.communicate()
-
-    if p.returncode == 0:
-        return json.loads(out.decode("utf-8"))
+    if out:
+        return json.loads(out)
     else:
         return {}
 
@@ -245,12 +243,7 @@ class AnimeFile:
                     "-y",
                     f.name,
                 ]
-                subprocess.run(
-                    cmd,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    stdin=subprocess.DEVNULL,
-                )
+                subprocess.run(cmd)
                 f.seek(0)
                 image = f.read()
 

@@ -7,7 +7,6 @@ import re
 import pycountry
 import shlex
 import sys
-import subprocess
 import webbrowser
 from typing import Callable, TYPE_CHECKING, List, Union, cast, Optional
 
@@ -18,7 +17,7 @@ from PySide2.QtWidgets import *  # type: ignore
 from anitracker import __version__
 from anitracker.ui import Ui_About, Ui_Settings, Ui_animeEpisode
 from anitracker.media import Anime, AnimeCollection, AnimeFile
-from anitracker.utilities import UserStatus, QProgressIndicator
+from anitracker.utilities import UserStatus, QProgressIndicator, subprocess
 from anitracker.background import *
 
 if TYPE_CHECKING:
@@ -29,20 +28,10 @@ if TYPE_CHECKING:
 def _open_magnet(magnet: str):
     if sys.platform.startswith("linux"):
         cmd = shlex.split(f"xdg-open '{magnet}'")
-        subprocess.Popen(
-            cmd,
-            stderr=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stdin=subprocess.DEVNULL,
-        )
+        subprocess.Popen(cmd)
     elif sys.platform.startswith("win32"):
         cmd = shlex.split(f"start '{magnet}'")
-        subprocess.Popen(
-            cmd,
-            stderr=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stdin=subprocess.DEVNULL,
-        )
+        subprocess.Popen(cmd)
 
 
 class HiddenProgressBarItem(QTableWidgetItem):
@@ -394,14 +383,9 @@ class SignalConnector:
                 self.window.app.remove_anime(anime.id)
             elif action == open_folder and folder is not None:
                 if sys.platform.startswith("win32"):
-                    subprocess.Popen(
-                        ["start", folder], shell=True, stdin=subprocess.DEVNULL
-                    )
+                    subprocess.Popen(["start", folder], shell=True)
                 elif sys.platform.startswith("linux"):
-                    subprocess.Popen(
-                        ["xdg-open", folder],
-                        stdin=subprocess.DEVNULL,
-                    )
+                    subprocess.Popen(["xdg-open", folder])
             elif action == play_next:
                 self._playing_episode = BackgroundThread(
                     play_episode, anime, next_ep, self.window
