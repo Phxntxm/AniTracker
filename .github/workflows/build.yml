@@ -131,6 +131,6 @@ jobs:
       - name: Create Release
         uses: ncipollo/release-action@v1.8.6
         with:
-          draft: true
+          # draft: true
           artifacts: "anitracker.tar.gz,AniTrackerSetup.exe"
           token: ${{ secrets.GITHUB_TOKEN }}
