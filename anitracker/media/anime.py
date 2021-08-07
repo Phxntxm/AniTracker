@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import re
-import subprocess
+from subprocess import DEVNULL, PIPE
 import sys
 import tempfile
 from dataclasses import dataclass
@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from anitracker import logger, ffprobe_cmd, ffmpeg_cmd
 from anitracker.media.media import BaseAnime, BaseCollection
 from anitracker.utilities import UserStatus
-from anitracker.utilities import subprocess as sp
+from anitracker.utilities import subprocess
 
 if TYPE_CHECKING:
     from anitracker.sync import AniList
@@ -32,12 +32,12 @@ def ffprobe_data(file: str) -> Dict:
     stdin = None
     shell = False
     if sys.platform.startswith("win32"):
-        stdin = subprocess.DEVNULL
+        stdin = DEVNULL
         shell = True
 
-    out, _ = sp.run(
+    out, _ = subprocess.run(
         args,
-        stdout=subprocess.PIPE,
+        stdout=PIPE,
         stdin=stdin,
         shell=shell,
     )
