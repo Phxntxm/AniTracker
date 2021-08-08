@@ -14,7 +14,7 @@ if frozen_path is not None:
         ffmpeg_cmd = f"{frozen_path}\\ffmpeg.exe"
     elif sys.platform.startswith("linux"):
         ffprobe_cmd = f"{frozen_path}/ffprobe"
-        ffmpeg_cmd = f"{frozen_path}/ffprobe"
+        ffmpeg_cmd = f"{frozen_path}/ffmpeg"
 
 
 def setup_logger():
