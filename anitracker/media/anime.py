@@ -184,14 +184,16 @@ class AnimeCollection(Anime, BaseCollection):
 
 class AnimeFile:
     title: str
+    season: int
     episode_title: str
     file: str
     episode_number: int
     subtitles: List[SubtitleTrack]
+    alternate_title: Optional[str]
     _thumbnail: Optional[bytes]
 
     def __repr__(self) -> str:
-        return f"<AnimeFile title={self.title} episode_number={self.episode_number}>"
+        return f"<AnimeFile title={self.title} season={self.season} episode_number={self.episode_number}>"
 
     __str__ = __repr__
 
@@ -205,7 +207,9 @@ class AnimeFile:
         def ret_file(_episode: str) -> AnimeFile:
             inst = cls()
             inst.title = data["anime_title"]
+            inst.season = int(data.get("season", 1))
             inst.episode_title = data.get("episode_title", "Unknown")
+            inst.alternate_title = data.get("alternate_title")
             inst.file = data["file_name"]
             inst.episode_number = int(_episode)
             inst.subtitles = []

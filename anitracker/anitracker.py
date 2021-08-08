@@ -28,6 +28,8 @@ from anitracker.player import Player
 if TYPE_CHECKING:
     from anitracker.__main__ import MainWindow
 
+    EPISODE_MATCH_TYPE = Dict[int, List[Tuple[AnimeFile, int]]]
+
 video_file_extensions = [
     "webm",
     "mkv",
@@ -86,7 +88,7 @@ class AniTracker:
         self._animes: Dict[int, AnimeCollection] = {}
 
         self._anilist = AniList()
-        self._episodes: Dict[Tuple[str, int], AnimeFile] = {}
+        self._episodes: List[AnimeFile] = []
         self.standalone_subtitles: Dict[Tuple[str, int], str] = {}
         self._anilist.from_config(self._config)
 
@@ -125,10 +127,10 @@ class AniTracker:
         # Now loop through all the names
         for anime in self.animes.values():
             if exact_name_match:
-                if self._anime_is_title(anime, title, ratio=100):
+                if self._anime_is_title(title, anime, ratio=100):
                     return anime
             else:
-                if self._anime_is_title(anime, title):
+                if self._anime_is_title(title, anime):
                     return anime
 
         return None
@@ -157,26 +159,20 @@ class AniTracker:
         self._mangas = _mangas
 
     def get_episodes(self, anime: AnimeCollection) -> List[AnimeFile]:
-        l = []
 
-        for (e_title, _), episode in self._episodes.items():
-            if self._anime_is_title(anime, e_title):
-                l.append(episode)
+        episodes = list(self._cull_episodes_for_anime(anime).values())
 
-        return l
+        # Sort it for ease of use
+        episodes.sort(key=lambda e: e.episode_number)
+
+        return episodes
 
     def get_episode(
         self, anime: AnimeCollection, episode_num: int
     ) -> Optional[AnimeFile]:
-        for (e_title, e_number), episode in self._episodes.items():
-            # Don't try to check if this isn't even the right episode number
-            if e_number != episode_num:
-                continue
-            # If it is the right episode number, check all the titles
-            if self._anime_is_title(anime, e_title):
-                return episode
+        episodes = self._cull_episodes_for_anime(anime, episode_num=episode_num)
 
-        return None
+        return episodes.get(episode_num)
 
     def play_episode(
         self, anime: AnimeCollection, episode_num: int, window: MainWindow
@@ -203,10 +199,27 @@ class AniTracker:
         player = Player(anime, episodes, self, window)
         player.start()
 
-    def _anime_is_title(
-        self, anime: AnimeCollection, title: str, *, ratio: int = 80
+    def _episode_is_from_anime(
+        self, episode: AnimeFile, anime: AnimeCollection, *, ratio: int = 80
     ) -> bool:
-        """Compares an anime to a title, using a fuzzy match to try for best
+        """Compares an episode to an anime's titles, using a fuzzy match to try for best
+        possibility of matching. This also will check all the titles of an anime"""
+        # First if this ain't the right season, don't compare
+        for _title in anime.titles:
+            if fuzz.ratio(episode.title, _title, processor=True) >= ratio:
+                return True
+            if (
+                episode.alternate_title
+                and fuzz.ratio(episode.alternate_title, _title, processor=True) >= ratio
+            ):
+                return True
+
+        return False
+
+    def _anime_is_title(
+        self, title: str, anime: AnimeCollection, *, ratio: int = 80
+    ) -> bool:
+        """Compares an anime to an episode's titles, using a fuzzy match to try for best
         possibility of matching. This also will check all the titles of an anime"""
         for _title in anime.titles:
             if fuzz.ratio(title, _title, processor=True) >= ratio:
@@ -225,8 +238,7 @@ class AniTracker:
         # Clear the dict
         self._episodes.clear()
         # Search through directory
-        for anime in self._probe_dir(dir):
-            self._episodes[(anime.title, anime.episode_number)] = anime
+        self._episodes = list(self._probe_dir(dir))
 
     def _probe_dir(self, path: Path) -> Generator[AnimeFile, None, None]:
         # Look at every file in the path
@@ -253,6 +265,154 @@ class AniTracker:
                 self.standalone_subtitles[
                     (data["anime_title"], int(data["episode"]))
                 ] = str(file)
+
+    def _cull_episodes_for_anime(
+        self,
+        anime: AnimeCollection,
+        *,
+        episode_num: Optional[int] = None,
+    ) -> Dict[int, AnimeFile]:
+        culled: Dict[int, AnimeFile] = {}
+        episodes = self._episodes_for_anime(anime, episode_num=episode_num)
+
+        # Loop through each episode number we have available
+        for ep_num, episodes_for_num in episodes.items():
+            # This is our culled episodes for this episode number
+            _culled_eps: List[AnimeFile] = []
+            # Track the largest ratio that's been found
+            _largest: int = 0
+
+            # Now this is the main reason why this is needed... animes aren't
+            # really in "seasons" like western shows. However, since this is what
+            # people are used to... this is how the files are labelled. I can't
+            # MATCH that against any data since animes aren't really saved that way.
+            # If a season 2 of an anime has a different title, then the initial fuzzy
+            # matching should resolve that any way, and I shouldn't even have to worry.
+            # However there are many animes that are Anime Part 1, Anime Part 2, etc.
+            # This culling helps with that. By appending the number to the title and
+            # checking for a difference
+
+            # Loop through the episodes
+            for ep, _ in episodes_for_num:
+                # Track the largest ratio for this episode
+                _largest_for_ep: int = 0
+
+                for _title in anime.titles:
+                    ratio: int = fuzz.ratio(_title, f"{ep.title} {ep.season}")
+                    alt_ratio: int = (
+                        fuzz.ratio(_title, f"{ep.alternate_title} {ep.season}")
+                        if ep.alternate_title
+                        else 0
+                    )
+
+                    # Get the highest of the two
+                    largest = max(ratio, alt_ratio)
+
+                    # Now we just need to find the largest ratio for this episode
+                    if largest > _largest_for_ep:
+                        _largest_for_ep = largest
+
+                # If we find a new largest ratio, clear the list and append this episode to it
+                if _largest_for_ep > _largest:
+                    _largest = _largest_for_ep
+                    _culled_eps.clear()
+                    _culled_eps.append(ep)
+                # Otherwise append (so we get all files that are the exact same ratio)
+                # later culling will handle exact matches that are still happening
+                # which realistically *should* only be for season 1 of animes. If not...
+                # then idfk, maybe the title between season 1 and 2 is the exact fuckin same?
+                # If that's happening what can I really do
+
+                elif _largest_for_ep == _largest:
+                    _culled_eps.append(ep)
+
+            # If our culling worked...great, this should be what happens most of the time
+            if len(_culled_eps) == 1:
+                culled[ep_num] = _culled_eps[0]
+            # I don't see how it would be possible to have a situation where NONE are
+            # returned, but just in case lets make sure there are more
+            elif len(_culled_eps) > 1:
+                # Now there's two situations we could have...
+                # say we have these two animes/episodes:
+                # Ascendance of a Bookworm (episode 1)
+                # Ascendance of a Bookworm Part 2 (episode 1)
+                # Now in the files this will end up being just called
+                # Ascendance of a Bookworm S02E01 or some shit, 9/10 times.
+                # For the second season's (or realistically any season but the first)
+                # episode, our culling should have fixed this
+                # but for the first.. it won't have. That's because the fuzzy match of
+                # Anime 1 -> Anime | Anime 2 -> Anime will be the exact same ratio
+                # Side note... the above point is exactly why it's safe to actually
+                # do this without much of a worry. Any thing we're NOT trying to cull here
+                # should really not be affected by any of this
+
+                # So that's what we check next here
+                # if only one of them is for season 1, prioritize that
+                _second_culling: List[AnimeFile] = []
+
+                for ep in _culled_eps:
+                    if ep.season == 1:
+                        _second_culling.append(ep)
+
+                # Now check this, if this only has one episode... it worked
+                if len(_second_culling) == 1:
+                    culled[ep_num] = _second_culling[0]
+                # Otherwise who knows, maybe they have 2 episodes for the exact
+                # same episode saved... just give the first
+                else:
+                    culled[ep_num] = _culled_eps[0]
+
+        return culled
+
+    def _episodes_for_anime(
+        self, anime: AnimeCollection, *, episode_num: Optional[int] = None
+    ) -> EPISODE_MATCH_TYPE:
+        """This is a naive method, it does a fuzzy match to see if
+        it thinks the episode matches the anime. It returns a dict of
+        episode number: tuples of the episode
+        and the ratio that fuzzy matching returned
+
+        If the episode kwarg is provided then this will only match for episodes
+        of that number"""
+        ret: EPISODE_MATCH_TYPE = {}
+
+        for episode in self._episodes:
+            # If we've specified the number to find, and this isn't that skip
+            if episode_num is not None and episode_num != episode.episode_number:
+                continue
+            # Also skip if this episode number is higher than the max for this season
+            if episode.episode_number > anime.episode_count:
+                continue
+
+            best_match: Optional[Tuple[AnimeFile, int]] = None
+
+            for _title in anime.titles:
+                # Get the ratio for both possible anime titles
+                ratio: int = fuzz.ratio(_title, episode.title)
+                alt_ratio: int = (
+                    fuzz.ratio(_title, episode.alternate_title)
+                    if episode.alternate_title
+                    else 0
+                )
+
+                # Get the highest of the two
+                largest = max(ratio, alt_ratio)
+
+                # If it is over 80% then it's a "match"
+                if largest >= 80:
+                    # Make sure not to override the best match
+                    if best_match and best_match[1] > largest:
+                        best_match = (episode, largest)
+                    elif best_match is None:
+                        best_match = (episode, largest)
+
+            if best_match is not None:
+                if episode.episode_number not in ret:
+                    ret[episode.episode_number] = []
+
+                ret[episode.episode_number].append(best_match)
+
+        return ret
 
     def search_nyaa(self, query: str) -> Iterator[NyaaResult]:
         url = "https://nyaa.si/"
