@@ -60,10 +60,17 @@ jobs:
         id: ffprobe
         with:
           url: https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffprobe-4.2.1-win-64.zip
+      - name: Download ffmpeg
+        uses: suisei-cn/actions-download-file@v1
+        id: ffmpeg
+        with:
+          url: https://github.com/ffbinaries/ffbinaries-prebuilt/releases/download/v4.2.1/ffmpeg-4.2.1-win-64.zip
       - name: Prepare binaries
         run: |
           7z x ${{ steps.mpv.outputs.filename }}
           7z x ${{ steps.ffprobe.outputs.filename }}
+          7z x ${{ steps.ffmpeg.outputs.filename }}
+          move ffmpeg.exe distribute
           move ffprobe.exe distribute 
           move mpv.exe distribute
           move mpv.com distribute
