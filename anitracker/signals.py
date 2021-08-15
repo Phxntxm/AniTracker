@@ -281,7 +281,6 @@ class SignalConnector:
         folder = ""
         open_folder = None
         play_next = None
-        search_nyaa = None
         play_opts = {}
         next_ep = 0
 
@@ -345,8 +344,9 @@ class SignalConnector:
 
             if not play_opts:
                 play_menu.setEnabled(False)
-        elif isinstance(anime, Anime):
-            search_nyaa = menu.addAction("Search nyaa")
+        
+        # Add a way to search nyaa based on the title
+        search_nyaa = menu.addAction("Search nyaa")
 
         action = menu.exec_(QCursor.pos())
 
