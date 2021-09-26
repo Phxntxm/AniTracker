@@ -108,7 +108,7 @@ class Anime(BaseAnime):
 
 
 @dataclass
-class AnimeCollection(Anime, BaseCollection):
+class AnimeCollection(BaseCollection, Anime):
     def __repr__(self) -> str:
         return f"<AnimeCollection(id={self.id} user_status={self.user_status} title={self.english_title})>"
 

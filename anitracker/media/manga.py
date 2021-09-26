@@ -12,5 +12,5 @@ class Manga(BaseManga):
 
 
 @dataclass
-class MangaCollection(Manga, BaseCollection):
+class MangaCollection(BaseCollection, Manga):
     pass

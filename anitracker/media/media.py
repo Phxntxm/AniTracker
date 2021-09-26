@@ -39,74 +39,54 @@ class BaseMedia:
 
     @staticmethod
     def _transform_from_anilist(data: Dict):
+        print(data)
         start = (
-            date(**data["media"]["startDate"])
-            if all(value for value in data["media"]["startDate"].values())
+            date(**data["startDate"])
+            if all(value for value in data["startDate"].values())
             else None
         )
         end = (
-            date(**data["media"]["endDate"])
-            if all(value for value in data["media"]["endDate"].values())
-            else None
-        )
-        user_start = (
-            date(**data["startedAt"])
-            if all(value for value in data["startedAt"].values())
-            else None
-        )
-        user_end = (
-            date(**data["completedAt"])
-            if all(value for value in data["completedAt"].values())
+            date(**data["endDate"])
+            if all(value for value in data["endDate"].values())
             else None
         )
         studios = [
             e["node"]["name"]
-            for e in data["media"]["studios"]["edges"]
+            for e in data["studios"]["edges"]
             if e["node"]["isAnimationStudio"]
         ]
         if studios:
             studio = studios[0]
         else:
             # Just get the first studio if we can't find an animation studio
-            if data["media"]["studios"]["edges"]:
-                studio = data["media"]["studios"]["edges"][0]
+            if data["studios"]["edges"]:
+                studio = data["studios"]["edges"][0]
             else:
                 studio = ""
 
         return {
-            "id": data["mediaId"],
-            "romaji_title": data["media"]["title"]["romaji"] or "",
-            "english_title": data["media"]["title"]["english"] or "",
-            "native_title": data["media"]["title"]["native"] or "",
-            "preferred_title": data["media"]["title"]["userPreferred"] or "",
-            "status": MediaStatus[data["media"]["status"]],
-            "description": data["media"]["description"],
+            "id": data["id"],
+            "romaji_title": data["title"]["romaji"] or "",
+            "english_title": data["title"]["english"] or "",
+            "native_title": data["title"]["native"] or "",
+            "preferred_title": data["title"]["userPreferred"] or "",
+            "status": MediaStatus[data["status"]],
+            "description": data["description"],
             "start_date": start,
             "end_date": end,
-            "episode_count": data["media"]["episodes"] or 0,
-            "average_score": data["media"]["averageScore"],
-            "season": f"{data['media']['season']} {data['media']['seasonYear']}",
-            "genres": data["media"]["genres"],
+            "episode_count": data["episodes"] or 0,
+            "average_score": data["averageScore"],
+            "season": f"{data['season']} {data['seasonYear']}",
+            "genres": data["genres"],
             "tags": [
                 (tag["name"], tag["rank"])
-                for tag in data["media"]["tags"]
+                for tag in data["tags"]
                 if not tag["isMediaSpoiler"]
             ],
             "studio": studio,
-            "cover_image": data["media"]["coverImage"]["large"],
-            "_list_id": data["id"],
-            "user_status": UserStatus[data["status"]],
-            "score": data["score"],
-            "progress": data["progress"],
-            "repeat": data["repeat"],
-            "updated_at": date.fromtimestamp(data["updatedAt"])
-            if data["updatedAt"]
-            else None,
-            "notes": data["notes"],
-            "user_start_date": user_start,
-            "user_end_date": user_end,
-            "chapters": data["media"]["chapters"],
-            "volumes": data["media"]["volumes"],
+            "cover_image": data["coverImage"]["large"],
+            "chapters": data["chapters"],
+            "volumes": data["volumes"],
         }
 
 
@@ -133,3 +113,36 @@ class BaseCollection:
     notes: str
     user_start_date: Union[date, None]
     user_end_date: Union[date, None]
+
+    @staticmethod
+    def _transform_from_anilist(data: Dict):
+        base = BaseMedia._transform_from_anilist(data["media"])
+
+        start = (
+            date(**data["startedAt"])
+            if all(value for value in data["startedAt"].values())
+            else None
+        )
+        end = (
+            date(**data["completedAt"])
+            if all(value for value in data["completedAt"].values())
+            else None
+        )
+
+        base.update(
+            {
+                "_list_id": data["id"],
+                "user_status": UserStatus[data["status"]],
+                "score": data["score"],
+                "progress": data["progress"],
+                "repeat": data["repeat"],
+                "updated_at": date.fromtimestamp(data["updatedAt"])
+                if data["updatedAt"]
+                else None,
+                "notes": data["notes"],
+                "user_start_date": start,
+                "user_end_date": end,
+            }
+        )
+
+        return base

@@ -249,8 +249,11 @@ class AniTracker:
 
             data = parse(file)
             # Skip if it doesn't match the format for anime
-            if not data["is_anime"] or "episode" not in data:
+            if not data["is_anime"]:
                 continue
+            # Assume it's a movie
+            if "episode" not in data:
+                data["episode"] = "1"
 
             # If it's a video file just yield it
             if data.get("extension", "").lower() in video_file_extensions:
@@ -349,6 +352,7 @@ class AniTracker:
                 # So that's what we check next here
                 # if only one of them is for season 1, prioritize that
                 _second_culling: List[AnimeFile] = []
+                _third_culling: List[AnimeFile] = []
 
                 for ep in _culled_eps:
                     if ep.season == 1:
@@ -357,10 +361,44 @@ class AniTracker:
                 # Now check this, if this only has one episode... it worked
                 if len(_second_culling) == 1:
                     culled[ep_num] = _second_culling[0]
-                # Otherwise who knows, maybe they have 2 episodes for the exact
-                # same episode saved... just give the first
+                # Otherwise there's really only one more guess I have, is that
+                # this is "The movie" for an anime. This is pretty common that it's
+                # called something like this
                 else:
-                    culled[ep_num] = _culled_eps[0]
+                    best_guess = None
+                    # If this anime is a movie:
+                    if anime.episode_count == 1:
+                        # Try to find one that is a movie
+                        for ep in _second_culling:
+                            # Try to make a guess as to if this is a movie or not
+                            if (
+                                fuzz.ratio(
+                                    ep.episode_title, "The Movie", processor=True
+                                )
+                                >= 85
+                            ):
+                                best_guess = ep
+                    # Otherwise this isn't a movie, we want to now REMOVE any that are movies
+                    else:
+                        for ep in _second_culling:
+                            if (
+                                fuzz.ratio(
+                                    ep.episode_title, "The Movie", processor=True
+                                )
+                                < 85
+                            ):
+                                _third_culling.append(ep)
+
+                    # If we found a movie for our movie, use that
+                    if best_guess is not None:
+                        culled[ep_num] = best_guess
+                    # Now... this is all the guesses I have as to why there may be no difference,
+                    # try to get the first one if it exists otherwise... who knows man
+                    elif _third_culling:
+                        culled[ep_num] = _third_culling[0]
+                    elif _second_culling:
+                        culled[ep_num] = _second_culling[0]
+                    # If we don't have any in either, then no idea
 
         return culled
 

@@ -152,6 +152,8 @@ query($page:Int,$search:String) {
       }
       format
       status
+      chapters
+      volumes
       description
       startDate {year month day}
       endDate {year month day}
