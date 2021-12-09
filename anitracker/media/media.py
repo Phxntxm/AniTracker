@@ -39,7 +39,6 @@ class BaseMedia:
 
     @staticmethod
     def _transform_from_anilist(data: Dict):
-        print(data)
         start = (
             date(**data["startDate"])
             if all(value for value in data["startDate"].values())
