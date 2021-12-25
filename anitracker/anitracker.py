@@ -80,6 +80,7 @@ video_file_extensions = [
     "f4b",
 ]
 subtitle_file_extensions = ["ass", "cmml", "lrc", "sami", "ttml", "srt", "ssa", "usf"]
+processor = lambda x: x.lower()
 
 
 class AniTracker:
@@ -206,11 +207,12 @@ class AniTracker:
         possibility of matching. This also will check all the titles of an anime"""
         # First if this ain't the right season, don't compare
         for _title in anime.titles:
-            if fuzz.ratio(episode.title, _title, processor=True) >= ratio:
+            if fuzz.ratio(episode.title, _title, processor=processor) >= ratio:
                 return True
             if (
                 episode.alternate_title
-                and fuzz.ratio(episode.alternate_title, _title, processor=True) >= ratio
+                and fuzz.ratio(episode.alternate_title, _title, processor=processor)
+                >= ratio
             ):
                 return True
 
@@ -222,7 +224,7 @@ class AniTracker:
         """Compares an anime to an episode's titles, using a fuzzy match to try for best
         possibility of matching. This also will check all the titles of an anime"""
         for _title in anime.titles:
-            if fuzz.ratio(title, _title, processor=True) >= ratio:
+            if fuzz.ratio(title, _title, processor=processor) >= ratio:
                 return True
 
         return False
@@ -301,9 +303,15 @@ class AniTracker:
                 _largest_for_ep: int = 0
 
                 for _title in anime.titles:
-                    ratio: int = fuzz.ratio(_title, f"{ep.title} {ep.season}")
+                    ratio: int = fuzz.ratio(
+                        _title, f"{ep.title} {ep.season}", processor=processor
+                    )
                     alt_ratio: int = (
-                        fuzz.ratio(_title, f"{ep.alternate_title} {ep.season}")
+                        fuzz.ratio(
+                            _title,
+                            f"{ep.alternate_title} {ep.season}",
+                            processor=processor,
+                        )
                         if ep.alternate_title
                         else 0
                     )
@@ -373,7 +381,7 @@ class AniTracker:
                             # Try to make a guess as to if this is a movie or not
                             if (
                                 fuzz.ratio(
-                                    ep.episode_title, "The Movie", processor=True
+                                    ep.episode_title, "The Movie", processor=processor
                                 )
                                 >= 85
                             ):
@@ -383,7 +391,7 @@ class AniTracker:
                         for ep in _second_culling:
                             if (
                                 fuzz.ratio(
-                                    ep.episode_title, "The Movie", processor=True
+                                    ep.episode_title, "The Movie", processor=processor
                                 )
                                 < 85
                             ):
@@ -426,9 +434,9 @@ class AniTracker:
 
             for _title in anime.titles:
                 # Get the ratio for both possible anime titles
-                ratio: int = fuzz.ratio(_title, episode.title)
+                ratio: int = fuzz.ratio(_title, episode.title, processor=processor)
                 alt_ratio: int = (
-                    fuzz.ratio(_title, episode.alternate_title)
+                    fuzz.ratio(_title, episode.alternate_title, processor=processor)
                     if episode.alternate_title
                     else 0
                 )
